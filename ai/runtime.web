@@ -1,0 +1,29 @@
+@import JS ff
+
+import { askGroq } from "./groq.web"
+
+class WeaveAI {
+
+    constructor() {
+        this.history = []
+    }
+
+    async generate(prompt) {
+
+        this.history.push({
+            role: "user",
+            content: prompt
+        })
+
+        const result = await askGroq(prompt)
+
+        this.history.push({
+            role: "assistant",
+            content: result
+        })
+
+        return result
+    }
+}
+
+export default new WeaveAI()

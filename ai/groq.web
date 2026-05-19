@@ -1,0 +1,28 @@
+@import JS ff
+
+const SUPABASE_FUNCTION =
+    "https://wiswfpfsjiowtrdyqpxy.supabase.co/functions/v1/GROQAI"
+
+export async function askGroq(prompt) {
+
+    const response = await fetch(
+        SUPABASE_FUNCTION,
+        {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                prompt
+            })
+        }
+    )
+
+    const data = await response.json()
+
+    if (!data.success) {
+        throw new Error(data.error || "Groq request failed")
+    }
+
+    return data.result
+}
