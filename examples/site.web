@@ -1,0 +1,7 @@
+@import HTML body
+
+h1 "Weave.web"
+
+p "HTML + JS unified language"
+
+button "Launch"

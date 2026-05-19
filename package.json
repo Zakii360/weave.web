@@ -1,0 +1,12 @@
+{
+  "name": "weave-web",
+  "version": "1.0.0",
+  "type": "module",
+  "bin": {
+    "weave": "./compiler/cli.js"
+  },
+  "scripts": {
+    "start": "node compiler/cli.js",
+    "compile": "node compiler/cli.js"
+  }
+}
