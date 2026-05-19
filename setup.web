@@ -1,0 +1,17 @@
+@import JS ff
+
+/*
+    REQUIRED SUPABASE EDGE FUNCTION:
+
+    GROQAI
+
+    REQUIRED SECRET:
+
+    GROQ_API_KEY
+
+    ENDPOINT:
+
+    https://wiswfpfsjiowtrdyqpxy.supabase.co/functions/v1/GROQAI
+*/
+
+export const WEAVE_AI_ENABLED = true
