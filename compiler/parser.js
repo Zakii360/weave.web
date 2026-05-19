@@ -36,7 +36,7 @@ function parse(source) {
             continue
         }
 
-        if (line === "{") {
+        if (line === "{" || line === "}") {
             continue
         }
 
