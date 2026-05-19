@@ -1,58 +1,66 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Weave.web</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>weave.web</title>
 
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css"/>
 
   <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/loader.js"></script>
 </head>
 <body>
 
-  <header>
-    <h1>Weave.web</h1>
+<header>
 
-    <div class="buttons">
-      <button id="compileBtn">Compile</button>
-      <button id="runBtn">Run</button>
-      <button id="downloadBtn">Download</button>
-    </div>
-  </header>
+  <h1>weave.web</h1>
 
-  <main>
+  <div class="buttons">
+    <button id="compileBtn">Compile</button>
+    <button id="runBtn">Run</button>
+    <button id="downloadBtn">Download</button>
+  </div>
 
-    <section class="editorPanel">
-      <div id="editor"></div>
-    </section>
+</header>
 
-    <section class="previewPanel">
-      <iframe id="preview"></iframe>
-    </section>
+<main>
 
-  </main>
+  <section class="editorPanel">
+    <div id="editor"></div>
+  </section>
 
-  <script type="module" src="app.js"></script>
+  <section class="previewPanel">
+    <iframe id="preview"></iframe>
+  </section>
 
-    <aside id="groqSidebar">
+</main>
 
-      <div class="groqHeader">
-        <h2>GROQ AI</h2>
-        <p>weave.web assistant</p>
-      </div>
+<button id="groqToggle">
+  Hide AI
+</button>
 
-      <textarea id="groqPrompt"
-        placeholder="Generate a weave.web dashboard..."></textarea>
+<aside id="groqSidebar">
 
-      <button id="groqGenerate">
-        Generate
-      </button>
+  <div class="groqHeader">
+    <h2>GROQ AI</h2>
+    <p>weave.web assistant</p>
+  </div>
 
-      <pre id="groqOutput">AI Ready</pre>
+  <textarea
+    id="groqPrompt"
+    placeholder="Generate a weave.web dashboard..."
+  ></textarea>
 
-    </aside>
-    
-<script src='groq-sidebar.js'></script>
+  <button id="groqGenerate">
+    Generate
+  </button>
+
+  <pre id="groqOutput">AI Ready</pre>
+
+</aside>
+
+<script src="app.js"></script>
+
 </body>
 </html>
