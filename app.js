@@ -1,81 +1,95 @@
-import { compile } from './compiler/compiler.js'
 
-let editor
+const ENDPOINT =
+  "https://wiswfpfsjiowtrdyqpxy.supabase.co/functions/v1/GROQAI"
 
-require.config({
-  paths: {
-    vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs'
+const promptBox =
+  document.getElementById("groqPrompt")
+
+const output =
+  document.getElementById("groqOutput")
+
+const button =
+  document.getElementById("groqGenerate")
+
+const toggle =
+  document.getElementById("groqToggle")
+
+const sidebar =
+  document.getElementById("groqSidebar")
+
+let sidebarOpen = true
+
+toggle.addEventListener("click", () => {
+
+  sidebarOpen = !sidebarOpen
+
+  if (sidebarOpen) {
+
+    sidebar.classList.remove("closed")
+
+    toggle.innerText = "Hide AI"
+
+  } else {
+
+    sidebar.classList.add("closed")
+
+    toggle.innerText = "Show AI"
   }
 })
 
-require(['vs/editor/editor.main'], async () => {
+button.addEventListener("click", async () => {
 
-  editor = monaco.editor.create(
-    document.getElementById('editor'),
-    {
+  const prompt = promptBox.value.trim()
 
-      value: `@import HTML body
-@import JS ff
-@import Thread style
+  if (!prompt) {
+    output.innerText = "Enter a prompt first."
+    return
+  }
 
-page {
+  output.innerText = "Generating..."
 
-    title "Thread Integrated"
+  try {
 
-    body {
+    const response = await fetch(
+      ENDPOINT,
+      {
+        method: "POST",
+        mode: "cors",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        body: JSON.stringify({
+          prompt
+        })
+      }
+    )
 
-        h1 id="title" "Hello"
+    if (!response.ok) {
 
-        button id="btn" "Click"
+      const text = await response.text()
+
+      output.innerText =
+        `HTTP ${response.status}\n\n${text}`
+
+      return
     }
-}
 
-style {
+    const data = await response.json()
 
-    body {
+    if (!data.success) {
 
-        background: #111827
-        color: white
-        font-family: Inter
+      output.innerText =
+        data.error || "Unknown GROQ error"
+
+      return
     }
 
-    button {
+    output.innerText = data.result
 
-        background: royalblue
-        color: white
-        padding: 14px
-        border-radius: 14px
-    }
-}
+  } catch (err) {
 
-script {
-
-    on("#btn", "click", clicked)
-
-    task clicked() {
-
-        put("Clicked!", "#title")
-    }
-}
-`,
-      language: 'javascript',
-      theme: 'vs-dark',
-      automaticLayout: true
-    }
-  )
-
-  compileCurrent()
+    output.innerText =
+      `Fetch failed:\n\n${err.message}\n\nLikely CORS issue in Supabase Edge Function.`
+  }
 })
-
-function compileCurrent() {
-
-  const source = editor.getValue()
-
-  const result = compile(source)
-
-  document.getElementById('preview')
-    .srcdoc = result.html
-}
-
-document.getElementById('compileBtn')
-  .addEventListener('click', compileCurrent)
