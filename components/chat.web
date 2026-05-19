@@ -1,0 +1,80 @@
+@import HTML body
+@import Thread style
+@import JS ff
+
+page AIChat {
+
+    section ChatContainer {
+
+        h1: "weave.web AI"
+
+        textarea #prompt {
+            placeholder: "Ask GROQ AI to generate weave.web code..."
+        }
+
+        button #generate {
+            text: "Generate"
+        }
+
+        pre #output {
+            text: ""
+        }
+    }
+}
+
+style ChatContainer {
+    background: #0f172a
+    color: white
+    padding: 40px
+    border-radius: 20px
+    width: 80%
+    margin: auto
+}
+
+style #prompt {
+    width: 100%
+    min-height: 200px
+    margin-top: 20px
+    padding: 20px
+}
+
+style #generate {
+    margin-top: 20px
+    padding: 15px 30px
+    background: #2563eb
+    color: white
+    border: none
+    border-radius: 10px
+}
+
+style #output {
+    margin-top: 30px
+    background: black
+    color: #4ade80
+    padding: 20px
+    overflow: auto
+}
+
+fn init() {
+
+    onClick("#generate", async () => {
+
+        const prompt = value("#prompt")
+
+        text("#output", "Generating...")
+
+        try {
+
+            const result = await askGroq(prompt)
+
+            text("#output", result)
+
+        } catch (err) {
+
+            text("#output", err.message)
+
+        }
+
+    })
+
+}
