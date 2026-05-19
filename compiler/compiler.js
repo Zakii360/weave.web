@@ -1,9 +1,9 @@
-const parse = require("./parser")
-const compileHTML = require("./htmlCompiler")
-const compileThread = require("./threadCompiler")
-const compileJS = require("./jsCompiler")
+import parse from "./parser.js"
+import compileHTML from "./htmlCompiler.js"
+import compileThread from "./threadCompiler.js"
+import compileJS from "./jsCompiler.js"
 
-function compile(source) {
+export function compile(source) {
 
     const ast = parse(source)
 
@@ -11,17 +11,17 @@ function compile(source) {
     const css = compileThread(ast.style)
     const js = compileJS(ast.js)
 
-    return `
-    <style>
-    ${css}
-    </style>
+    return {
+        html: `
+<style>
+${css}
+</style>
 
-    ${html}
+${html}
 
-    <script>
-    ${js}
-    </script>
-    `
+<script>
+${js}
+</script>
+`
+    }
 }
-
-module.exports = compile

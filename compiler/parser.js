@@ -1,4 +1,4 @@
-function parse(source) {
+export default function parse(source) {
 
     const lines = source
         .split("\n")
@@ -31,7 +31,10 @@ function parse(source) {
             continue
         }
 
-        if (line.startsWith("ff")) {
+        if (
+            line.startsWith("ff") ||
+            line.startsWith("script")
+        ) {
             mode = "js"
             continue
         }
@@ -55,5 +58,3 @@ function parse(source) {
 
     return ast
 }
-
-module.exports = parse
