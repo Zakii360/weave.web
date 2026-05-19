@@ -10,3 +10,4 @@ A browser-based compiler combining Weave and Chicken-Nuget.
 - Hybrid mode
 - Monaco editor
 - GitHub Pages ready
+## Now with Beta Thread integration | CSS
