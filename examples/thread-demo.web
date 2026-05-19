@@ -1,0 +1,48 @@
+@import HTML body
+@import JS ff
+@import Thread style
+
+page {
+
+    title "Thread Demo"
+
+    body {
+
+        h1 id="title" "Thread Works"
+
+        button id="btn" "Click Me"
+    }
+}
+
+style {
+
+    body {
+
+        background: #111827
+        color: white
+        display: flex
+        flex-direction: column
+        align-items: center
+        justify-content: center
+        gap: 20px
+        height: 100vh
+    }
+
+    button {
+
+        background: royalblue
+        color: white
+        padding: 14px
+        border-radius: 14px
+    }
+}
+
+script {
+
+    on("#btn", "click", clicked)
+
+    task clicked() {
+
+        put("Thread Integrated!", "#title")
+    }
+}
