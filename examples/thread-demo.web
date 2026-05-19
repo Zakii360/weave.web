@@ -1,48 +1,34 @@
-@import HTML body
-@import JS ff
 @import Thread style
 
-page {
+hero {
 
-    title "Thread Demo"
+    flex
+    column
+    center
 
-    body {
+    bg: black
+    text: white
 
-        h1 id="title" "Thread Works"
+    h: 100vh
+    gap: 20
 
-        button id="btn" "Click Me"
+    title {
+        size: 48
+        weight: bold
     }
-}
 
-style {
-
-    body {
-
-        background: #111827
-        color: white
-        display: flex
-        flex-direction: column
-        align-items: center
-        justify-content: center
-        gap: 20px
-        height: 100vh
+    subtitle {
+        size: 20
     }
 
     button {
 
-        background: royalblue
-        color: white
-        padding: 14px
-        border-radius: 14px
-    }
-}
+        bg: royalblue
+        text: white
 
-script {
+        pad: 14 24
+        radius: 16
 
-    on("#btn", "click", clicked)
-
-    task clicked() {
-
-        put("Thread Integrated!", "#title")
+        shadow: soft
     }
 }
