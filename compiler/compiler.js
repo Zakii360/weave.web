@@ -1,20 +1,36 @@
+import { lex } from './lexer.js'
+import { parse } from './parser.js'
 import { compileHTML } from './htmlCompiler.js'
 import { compileJS } from './jsCompiler.js'
 import { compileThread } from './threadCompiler.js'
 
 export function compile(source) {
 
-  if (source.startsWith('@import c-nuget body')) {
-    return compileHTML(source)
-  }
+  const tokens = lex(source)
 
-  if (source.startsWith('@import Weave ff')) {
-    return compileJS(source)
-  }
+  const ast = parse(tokens)
 
-  if (source.startsWith('@import Thread style')) {
-    return compileThread(source)
-  }
+  const html = compileHTML(ast)
 
-  throw new Error('Unknown .web import type')
+  const js = compileJS(ast)
+
+  const css = compileThread(source)
+
+  const finalHTML = `
+${html}
+
+<style>
+${css}
+</style>
+
+<script>
+${js}
+</script>
+`
+
+  return {
+    html: finalHTML,
+    js,
+    css
+  }
 }
