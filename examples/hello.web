@@ -1,5 +1,0 @@
-@import JS ff
-
-let name = "Zaki"
-
-say("Hello " + name)
