@@ -11,6 +11,32 @@ const output =
 const button =
   document.getElementById("groqGenerate")
 
+const toggle =
+  document.getElementById("groqToggle")
+
+const sidebar =
+  document.getElementById("groqSidebar")
+
+let sidebarOpen = true
+
+toggle.addEventListener("click", () => {
+
+  sidebarOpen = !sidebarOpen
+
+  if (sidebarOpen) {
+
+    sidebar.classList.remove("closed")
+
+    toggle.innerText = "Hide AI"
+
+  } else {
+
+    sidebar.classList.add("closed")
+
+    toggle.innerText = "Show AI"
+  }
+})
+
 button.addEventListener("click", async () => {
 
   const prompt = promptBox.value
