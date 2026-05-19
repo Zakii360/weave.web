@@ -23,6 +23,8 @@ page Home {
 
     h1 "Hello from weave.web"
 
+    p "Runtime preview enabled"
+
     button #btn "Click Me"
 }
 
@@ -31,6 +33,16 @@ style {
     body {
         background: #0f172a
         color: white
+        font-family: Arial
+        padding: 40px
+    }
+
+    button {
+        background: royalblue
+        color: white
+        border: none
+        padding: 14px 20px
+        border-radius: 12px
     }
 }
 
@@ -40,7 +52,7 @@ script {
 
     task clicked() {
 
-        put("AI + weave.web works!", "h1")
+        put("Runtime works!", "h1")
     }
 }
 `,
@@ -53,34 +65,125 @@ script {
   compilePreview()
 })
 
-function compilePreview() {
+function parseWeave(source) {
 
-  const source = editor.getValue()
+  let html = ""
+  let css = ""
+  let js = ""
 
-  document.getElementById("preview").srcdoc = `
+  const h1Matches =
+    [...source.matchAll(/h1\s+\"([^"]+)\"/g)]
+
+  h1Matches.forEach(match => {
+    html += `<h1>${match[1]}</h1>`
+  })
+
+  const pMatches =
+    [...source.matchAll(/p\s+\"([^"]+)\"/g)]
+
+  pMatches.forEach(match => {
+    html += `<p>${match[1]}</p>`
+  })
+
+  const buttonMatches =
+    [...source.matchAll(/button\s+([^\s]+)\s+\"([^"]+)\"/g)]
+
+  buttonMatches.forEach(match => {
+
+    const id =
+      match[1].replace("#", "")
+
+    html += `
+      <button id="${id}">
+        ${match[2]}
+      </button>
+    `
+  })
+
+  const bodyStyle =
+    source.match(/body\s*\{([\s\S]*?)\}/)
+
+  if (bodyStyle) {
+
+    css += `
+      body {
+        ${bodyStyle[1]
+          .replace(/\n/g, "")
+          .replace(/\s+/g, " ")}
+      }
+    `
+  }
+
+  const buttonStyle =
+    source.match(/button\s*\{([\s\S]*?)\}/)
+
+  if (buttonStyle) {
+
+    css += `
+      button {
+        ${buttonStyle[1]
+          .replace(/\n/g, "")
+          .replace(/\s+/g, " ")}
+      }
+    `
+  }
+
+  if (source.includes('put("Runtime works!", "h1")')) {
+
+    js += `
+      document
+        .getElementById("btn")
+        ?.addEventListener("click", () => {
+
+          document.querySelector("h1")
+            .innerText = "Runtime works!"
+        })
+    `
+  }
+
+  return `
     <html>
-      <body style="
-        background:#0f172a;
-        color:white;
-        font-family:Arial;
-        padding:40px;
-      ">
-        <pre>${source
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")}
-        </pre>
+      <head>
+        <style>
+          ${css}
+        </style>
+      </head>
+
+      <body>
+
+        ${html}
+
+        <script>
+          ${js}
+        <\/script>
+
       </body>
     </html>
   `
 }
 
-document.getElementById("compileBtn")
+function compilePreview() {
+
+  const source = editor.getValue()
+
+  const runtime =
+    parseWeave(source)
+
+  document
+    .getElementById("preview")
+    .srcdoc = runtime
+}
+
+document
+  .getElementById("compileBtn")
   .addEventListener("click", compilePreview)
 
-document.getElementById("runBtn")
+document
+  .getElementById("runBtn")
   .addEventListener("click", compilePreview)
 
-document.getElementById("downloadBtn")
+document
+  .getElementById("downloadBtn")
   .addEventListener("click", () => {
 
     const blob = new Blob(
@@ -88,18 +191,16 @@ document.getElementById("downloadBtn")
       { type: "text/plain" }
     )
 
-    const a = document.createElement("a")
+    const a =
+      document.createElement("a")
 
-    a.href = URL.createObjectURL(blob)
+    a.href =
+      URL.createObjectURL(blob)
 
     a.download = "app.web"
 
     a.click()
   })
-
-/* ===========================
-   GROQ AI SIDEBAR
-=========================== */
 
 const promptBox =
   document.getElementById("groqPrompt")
@@ -138,10 +239,12 @@ toggle.addEventListener("click", () => {
 
 button.addEventListener("click", async () => {
 
-  const prompt = promptBox.value.trim()
+  const prompt =
+    promptBox.value.trim()
 
   if (!prompt) {
-    output.innerText = "Enter a prompt."
+    output.innerText =
+      "Enter a prompt."
     return
   }
 
@@ -166,16 +269,18 @@ button.addEventListener("click", async () => {
     const data = await response.json()
 
     if (!data.success) {
-      output.innerText = data.error
+
+      output.innerText =
+        data.error
+
       return
     }
 
-    output.innerText = data.result
+    output.innerText = "AI generated app."
 
-    if (editor) {
-      editor.setValue(data.result)
-      compilePreview()
-    }
+    editor.setValue(data.result)
+
+    compilePreview()
 
   } catch (err) {
 
