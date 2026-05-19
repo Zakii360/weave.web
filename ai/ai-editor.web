@@ -1,0 +1,26 @@
+@import HTML body
+@import Thread style
+@import JS ff
+
+import "../ui/ai-tab.web"
+
+page Editor {
+
+    section Workspace {
+
+        h1: "weave.web IDE"
+
+        p: "AI assistant connected to GROQ"
+
+        div #editor {
+            text: "Start building..."
+        }
+    }
+}
+
+style Workspace {
+    padding: 60px
+    background: #020617
+    color: white
+    min-height: 100vh
+}
