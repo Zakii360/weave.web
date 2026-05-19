@@ -1,38 +1,45 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Weave.web</title>
-
-  <link rel="stylesheet" href="style.css" />
-
-  <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/loader.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>weave.web + GROQAI</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
   <header>
-    <h1>Weave.web</h1>
-
-    <div class="buttons">
-      <button id="compileBtn">Compile</button>
-      <button id="runBtn">Run</button>
-      <button id="downloadBtn">Download</button>
-    </div>
+    <h1>weave.web AI</h1>
+    <p>Powered by Supabase Edge Functions + GROQ</p>
   </header>
 
   <main>
 
-    <section class="editorPanel">
-      <div id="editor"></div>
+    <section class="editor-panel">
+
+      <textarea id="prompt">
+Generate a weave.web landing page with dark mode
+      </textarea>
+
+      <button id="generateBtn">
+        Generate
+      </button>
+
     </section>
 
-    <section class="previewPanel">
-      <iframe id="preview"></iframe>
+    <section class="output-panel">
+
+      <h2>AI Output</h2>
+
+      <pre id="output">
+Ready...
+      </pre>
+
     </section>
 
   </main>
 
-  <script type="module" src="app.js"></script>
+  <script src="app.js"></script>
+
 </body>
 </html>
