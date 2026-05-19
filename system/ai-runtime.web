@@ -1,0 +1,52 @@
+@import JS ff
+
+const GROQ_ENDPOINT =
+    "https://wiswfpfsjiowtrdyqpxy.supabase.co/functions/v1/GROQAI"
+
+class WeaveAI {
+
+    constructor() {
+        this.enabled = true
+        this.history = []
+    }
+
+    toggle() {
+        this.enabled = !this.enabled
+        return this.enabled
+    }
+
+    async ask(prompt) {
+
+        if (!this.enabled) {
+            throw new Error("AI is disabled")
+        }
+
+        const response = await fetch(
+            GROQ_ENDPOINT,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    prompt
+                })
+            }
+        )
+
+        const data = await response.json()
+
+        if (!data.success) {
+            throw new Error(data.error)
+        }
+
+        this.history.push({
+            prompt,
+            result: data.result
+        })
+
+        return data.result
+    }
+}
+
+export default new WeaveAI()
