@@ -1,36 +1,28 @@
-import { lex } from './lexer.js'
-import { parse } from './parser.js'
-import { compileHTML } from './htmlCompiler.js'
-import { compileJS } from './jsCompiler.js'
-import { compileThread } from './threadCompiler.js'
+const parse = require("./parser")
+const compileHTML = require("./htmlCompiler")
+const compileThread = require("./threadCompiler")
+const compileJS = require("./jsCompiler")
 
-export function compile(source) {
+function compile(source) {
 
-  const tokens = lex(source)
+    const ast = parse(source)
 
-  const ast = parse(tokens)
+    const html = compileHTML(ast.page)
+    const css = compileThread(ast.style)
+    const js = compileJS(ast.js)
 
-  const html = compileHTML(ast)
-
-  const js = compileJS(ast)
-
-  const css = compileThread(source)
-
-  const finalHTML = `
-${html}
-
-<style>
-${css}
-</style>
-
-<script>
-${js}
-</script>
-`
-
-  return {
-    html: finalHTML,
-    js,
-    css
-  }
+    return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <style>${css}</style>
+    </head>
+    <body>
+        ${html}
+        <script>${js}</script>
+    </body>
+    </html>
+    `
 }
+
+module.exports = compile
