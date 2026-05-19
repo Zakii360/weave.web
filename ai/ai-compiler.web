@@ -1,0 +1,13 @@
+@import JS ff
+
+import AI from "../system/ai-runtime.web"
+
+export async function compileWithAI(prompt) {
+
+    const generated = await AI.ask(prompt)
+
+    console.log("Generated weave.web:")
+    console.log(generated)
+
+    return generated
+}
