@@ -1,52 +1,45 @@
-function compileHTML(nodes) {
+export function compileHTML(ast) {
 
-    let html = ""
+  const source = ast.tokens
+    .map(t => t.value)
+    .join(' ')
 
-    for (const line of nodes) {
+  let html = ''
 
-        if (line.startsWith("title")) {
+  const titleMatch = source.match(/title\s+\"([^\"]+)\"/)
 
-            const text = line.match(/"(.*?)"/)[1]
+  const h1Match = source.match(
+    /h1(?:\s+id=\"([^\"]+)\")?\s+\"([^\"]+)\"/
+  )
 
-            html += `<title>${text}</title>`
-        }
+  const buttonMatch = source.match(
+    /button(?:\s+id=\"([^\"]+)\")?\s+\"([^\"]+)\"/
+  )
 
-        else if (line.startsWith("h1")) {
+  html += `<!DOCTYPE html>
+<html>
+<head>
+<title>${titleMatch?.[1] || 'Weave.web'}</title>
+</head>
+<body>
+`
 
-            const text = line.match(/"(.*?)"/)[1]
+  if (h1Match) {
+    html += `<h1 id="${h1Match[1] || ''}">
+${h1Match[2]}
+</h1>`
+  }
 
-            const id = line.match(/id=\"(.*?)\"/)
+  if (buttonMatch) {
+    html += `<button id="${buttonMatch[1] || ''}">
+${buttonMatch[2]}
+</button>`
+  }
 
-            html += `<h1 id="${id ? id[1] : ""}">${text}</h1>`
-        }
+  html += `
+</body>
+</html>
+`
 
-        else if (line.startsWith("p")) {
-
-            const text = line.match(/"(.*?)"/)[1]
-
-            const id = line.match(/id=\"(.*?)\"/)
-
-            html += `<p id="${id ? id[1] : ""}">${text}</p>`
-        }
-
-        else if (line.startsWith("button")) {
-
-            const text = line.match(/"(.*?)"/)[1]
-
-            const id = line.match(/id=\"(.*?)\"/)
-
-            html += `<button id="${id ? id[1] : ""}">${text}</button>`
-        }
-
-        else if (line.startsWith("div")) {
-
-            const id = line.match(/id=\"(.*?)\"/)
-
-            html += `<div id="${id ? id[1] : ""}"></div>`
-        }
-    }
-
-    return html
+  return html
 }
-
-module.exports = compileHTML

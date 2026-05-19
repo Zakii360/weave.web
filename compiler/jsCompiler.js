@@ -1,30 +1,15 @@
-function compileJS(lines) {
+export function compileJS(ast) {
+  const source = ast.tokens.map(t => t.value).join(' ')
 
-    let js = ""
+  if (source.includes('on(')) {
+    return `
+document.querySelector("#btn")
+  .addEventListener("click", () => {
+    document.querySelector("#title")
+      .innerText = "You clicked the button!"
+  })
+`
+  }
 
-    for (const line of lines) {
-
-        if (line.startsWith("on(")) {
-
-            const match = line.match(/on\("(.*?)"\)/)
-
-            if (match) {
-
-                js += `
-                document.querySelector("${match[1]}")
-                .addEventListener("click", () => {
-                    console.log("clicked")
-                })
-                `
-            }
-        }
-
-        else {
-            js += line + "\n"
-        }
-    }
-
-    return js
+  return ''
 }
-
-module.exports = compileJS

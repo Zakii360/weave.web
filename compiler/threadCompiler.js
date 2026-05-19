@@ -1,55 +1,135 @@
-function compileThread(lines) {
+export function compileThread(source) {
 
-    let css = ""
+  const lines = source
+    .split('\n')
+    .map(line => line.trim())
+    .filter(Boolean)
 
-    let selector = null
+  let css = ''
 
-    for (const line of lines) {
+  const stack = []
 
-        if (line.startsWith("thread")) {
+  const shortcuts = {
 
-            selector = line.replace("thread", "").replace("{", "").trim()
+    bg: 'background',
+    text: 'color',
+    pad: 'padding',
+    radius: 'border-radius',
+    w: 'width',
+    h: 'height',
+    size: 'font-size',
+    weight: 'font-weight',
+    shadow: 'box-shadow',
+    border: 'border',
+    flexdir: 'flex-direction',
+    items: 'align-items',
+    justify: 'justify-content',
+    gap: 'gap'
+  }
 
-            css += `${selector} {`
+  function formatValue(prop, value) {
 
-            continue
-        }
+    if (
+      ['padding', 'margin', 'border-radius', 'width', 'height', 'font-size', 'gap']
+      .includes(prop)
+    ) {
 
-        if (line === "}") {
+      return value
+        .split(' ')
+        .map(v => {
 
-            css += `}`
+          if (!isNaN(v)) {
+            return v + 'px'
+          }
 
-            continue
-        }
-
-        if (line.includes(":")) {
-
-            let [prop, value] = line.split(":")
-
-            prop = prop.trim()
-            value = value.trim()
-
-            const map = {
-                bg: "background",
-                text: "color",
-                size: "font-size",
-                pad: "padding",
-                radius: "border-radius"
-            }
-
-            if (map[prop]) {
-                prop = map[prop]
-            }
-
-            if (!isNaN(value)) {
-                value += "px"
-            }
-
-            css += `${prop}:${value};`
-        }
+          return v
+        })
+        .join(' ')
     }
 
-    return css
-}
+    return value
+  }
 
-module.exports = compileThread
+  for (const line of lines) {
+
+    if (line.startsWith('thread ')) {
+
+      const selector = line
+        .replace('thread ', '')
+        .replace('{', '')
+        .trim()
+
+      stack.push(selector)
+
+      css += `${selector} {\n`
+
+      continue
+    }
+
+    if (line.endsWith('{')) {
+
+      const nested = line.replace('{', '').trim()
+
+      const parent = stack[stack.length - 1]
+
+      let selector = ''
+
+      if (nested === 'hover') {
+        selector = `${parent}:hover`
+      }
+      else if (nested === 'focus') {
+        selector = `${parent}:focus`
+      }
+      else {
+        selector = `${parent} ${nested}`
+      }
+
+      stack.push(selector)
+
+      css += `}\n\n${selector} {\n`
+
+      continue
+    }
+
+    if (line === '}') {
+
+      stack.pop()
+
+      css += '}\n'
+
+      continue
+    }
+
+    const colon = line.indexOf(':')
+
+    if (colon !== -1) {
+
+      let prop = line.slice(0, colon).trim()
+      let value = line.slice(colon + 1).trim()
+
+      if (shortcuts[prop]) {
+        prop = shortcuts[prop]
+      }
+
+      if (prop === 'glow') {
+
+        css += `  box-shadow: 0 0 20px ${value};\n`
+
+        continue
+      }
+
+      if (prop === 'scale') {
+
+        css += `  transform: scale(${value});\n`
+
+        continue
+      }
+
+      value = formatValue(prop, value)
+
+      css += `  ${prop}: ${value};\n`
+    }
+  }
+
+  return css
+}
