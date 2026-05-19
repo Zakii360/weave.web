@@ -1,0 +1,19 @@
+@import HTML body
+@import JS ff
+
+page {
+    title "Hybrid"
+
+    body {
+        h1 id="title" "Hello"
+        button id="btn" "Click"
+    }
+}
+
+script {
+    on("#btn", "click", clicked)
+
+    task clicked() {
+        put("Clicked!", "#title")
+    }
+}

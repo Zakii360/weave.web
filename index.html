@@ -1,86 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Weave.web Compiler</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Weave.web</title>
 
-<style>
-body {
-    margin: 0;
-    background: #0d0d0d;
-    color: white;
-    font-family: Arial, sans-serif;
-    height: 100vh;
-    display: flex;
-}
+  <link rel="stylesheet" href="style.css" />
 
-.panel {
-    width: 50%;
-    display: flex;
-    flex-direction: column;
-}
-
-textarea {
-    flex: 1;
-    background: #151515;
-    color: #00ff99;
-    border: none;
-    padding: 20px;
-    font-size: 15px;
-    resize: none;
-    outline: none;
-}
-
-pre {
-    flex: 1;
-    margin: 0;
-    padding: 20px;
-    overflow: auto;
-    background: #101010;
-}
-
-button {
-    border: none;
-    padding: 15px;
-    background: #00cc88;
-    color: black;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-.topbar {
-    padding: 10px;
-    background: #111;
-    border-bottom: 1px solid #222;
-}
-</style>
+  <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/loader.js"></script>
 </head>
-
 <body>
 
-<div class="panel">
-<div class="topbar">Weave.web Source</div>
+  <header>
+    <h1>Weave.web</h1>
 
-<textarea id="editor">
-@import HTML body
+    <div class="buttons">
+      <button id="compileBtn">Compile</button>
+      <button id="runBtn">Run</button>
+      <button id="downloadBtn">Download</button>
+    </div>
+  </header>
 
-h1 "Hello Weave.web"
+  <main>
 
-p "Running entirely in-browser."
+    <section class="editorPanel">
+      <div id="editor"></div>
+    </section>
 
-button "Compile Me"
-</textarea>
+    <section class="previewPanel">
+      <iframe id="preview"></iframe>
+    </section>
 
-<button onclick="compileWeave()">Compile</button>
-</div>
+  </main>
 
-<div class="panel">
-<div class="topbar">Compiled Output</div>
-<pre id="output"></pre>
-</div>
-
-<script src="./compiler/compiler.js"></script>
-
+  <script type="module" src="app.js"></script>
 </body>
 </html>

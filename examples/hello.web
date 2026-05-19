@@ -1,0 +1,9 @@
+@import HTML body
+
+page {
+    title "Hello"
+
+    body {
+        h1 "Hello World"
+    }
+}

@@ -1,30 +1,12 @@
 # Weave.web
 
-Unified programming language for:
-- JavaScript
-- HTML
-- Chicken-Nuget rendering
+A browser-based compiler combining Weave and Chicken-Nuget.
 
-## Usage
+## Features
 
-### JS Mode
-
-```weave
-@import JS ff
-
-say("Hello")
-```
-
-### HTML Mode
-
-```weave
-@import HTML body
-
-h1 "Hello"
-```
-
-## Compile
-
-```bash
-node compiler/cli.js examples/hello.web
-```
+- .web files
+- HTML output
+- JS output
+- Hybrid mode
+- Monaco editor
+- GitHub Pages ready
