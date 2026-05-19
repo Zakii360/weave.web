@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weave.web Compiler</title>
+
+<style>
+body {
+    margin: 0;
+    background: #0d0d0d;
+    color: white;
+    font-family: Arial, sans-serif;
+    height: 100vh;
+    display: flex;
+}
+
+.panel {
+    width: 50%;
+    display: flex;
+    flex-direction: column;
+}
+
+textarea {
+    flex: 1;
+    background: #151515;
+    color: #00ff99;
+    border: none;
+    padding: 20px;
+    font-size: 15px;
+    resize: none;
+    outline: none;
+}
+
+pre {
+    flex: 1;
+    margin: 0;
+    padding: 20px;
+    overflow: auto;
+    background: #101010;
+}
+
+button {
+    border: none;
+    padding: 15px;
+    background: #00cc88;
+    color: black;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.topbar {
+    padding: 10px;
+    background: #111;
+    border-bottom: 1px solid #222;
+}
+</style>
+</head>
+
+<body>
+
+<div class="panel">
+<div class="topbar">Weave.web Source</div>
+
+<textarea id="editor">
+@import HTML body
+
+h1 "Hello Weave.web"
+
+p "Running entirely in-browser."
+
+button "Compile Me"
+</textarea>
+
+<button onclick="compileWeave()">Compile</button>
+</div>
+
+<div class="panel">
+<div class="topbar">Compiled Output</div>
+<pre id="output"></pre>
+</div>
+
+<script src="./compiler/compiler.js"></script>
+
+</body>
+</html>
