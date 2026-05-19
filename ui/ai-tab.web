@@ -1,0 +1,108 @@
+@import HTML body
+@import Thread style
+@import JS ff
+
+import AI from "../system/ai-runtime.web"
+
+page AITab {
+
+    section Sidebar {
+
+        h2: "AI Assistant"
+
+        button #toggleAI {
+            text: "AI ON"
+        }
+
+        textarea #prompt {
+            placeholder: "Ask AI to generate weave.web code..."
+        }
+
+        button #sendPrompt {
+            text: "Generate"
+        }
+
+        pre #result {
+            text: "AI Ready"
+        }
+    }
+}
+
+style Sidebar {
+    position: fixed
+    right: 0
+    top: 0
+    width: 420px
+    height: 100vh
+    background: #0f172a
+    color: white
+    padding: 30px
+    overflow: auto
+    box-shadow: -10px 0 30px rgba(0,0,0,0.3)
+}
+
+style #prompt {
+    width: 100%
+    min-height: 220px
+    margin-top: 20px
+    padding: 20px
+    background: #111827
+    color: white
+}
+
+style #sendPrompt {
+    margin-top: 20px
+    padding: 14px 24px
+    background: #2563eb
+    color: white
+    border-radius: 12px
+}
+
+style #toggleAI {
+    margin-top: 10px
+    padding: 10px 18px
+    background: #22c55e
+    color: white
+    border-radius: 10px
+}
+
+style #result {
+    margin-top: 25px
+    background: black
+    color: #4ade80
+    padding: 20px
+    overflow: auto
+}
+
+fn init() {
+
+    onClick("#toggleAI", () => {
+
+        const state = AI.toggle()
+
+        if (state) {
+            text("#toggleAI", "AI ON")
+        } else {
+            text("#toggleAI", "AI OFF")
+        }
+    })
+
+    onClick("#sendPrompt", async () => {
+
+        const prompt = value("#prompt")
+
+        text("#result", "Generating...")
+
+        try {
+
+            const output = await AI.ask(prompt)
+
+            text("#result", output)
+
+        } catch (err) {
+
+            text("#result", err.message)
+
+        }
+    })
+}
