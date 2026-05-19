@@ -5,61 +5,107 @@
 }
 
 body {
-  background: #020617;
+  background: #0f0f0f;
   color: white;
-  font-family: Arial, sans-serif;
-  min-height: 100vh;
+  font-family: Inter, sans-serif;
+  height: 100vh;
+  overflow: hidden;
 }
 
 header {
-  padding: 30px;
-  border-bottom: 1px solid #1e293b;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  border-bottom: 1px solid #222;
+}
+
+.buttons {
+  display: flex;
+  gap: 10px;
+}
+
+button {
+  background: #1e1e1e;
+  border: 1px solid #333;
+  color: white;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
 }
 
 main {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 20px;
-  padding: 30px;
+  height: calc(100vh - 60px);
 }
 
-.editor-panel,
-.output-panel {
-  background: #0f172a;
-  border-radius: 16px;
-  padding: 20px;
-}
-
-textarea {
+#editor, #preview {
   width: 100%;
-  min-height: 350px;
-  background: #111827;
-  color: white;
-  border: 1px solid #334155;
-  border-radius: 12px;
-  padding: 16px;
-  resize: vertical;
-}
-
-button {
-  margin-top: 20px;
-  width: 100%;
-  padding: 16px;
+  height: 100%;
   border: none;
-  border-radius: 12px;
-  background: #2563eb;
-  color: white;
-  font-size: 16px;
-  cursor: pointer;
 }
 
-pre {
-  margin-top: 20px;
-  background: black;
-  color: #4ade80;
-  border-radius: 12px;
-  padding: 20px;
-  min-height: 350px;
-  overflow: auto;
-  white-space: pre-wrap;
+
+/* GROQ AI SIDEBAR */
+
+#groqSidebar {
+    position: fixed;
+    right: 0;
+    top: 0;
+    width: 420px;
+    height: 100vh;
+    background: #0f172a;
+    color: white;
+    border-left: 1px solid #1e293b;
+    padding: 24px;
+    overflow: auto;
+    z-index: 99999;
+    font-family: Arial, sans-serif;
+}
+
+.groqHeader h2 {
+    margin: 0;
+    font-size: 28px;
+}
+
+.groqHeader p {
+    opacity: 0.7;
+    margin-top: 6px;
+    margin-bottom: 20px;
+}
+
+#groqPrompt {
+    width: 100%;
+    min-height: 240px;
+    background: #111827;
+    color: white;
+    border: 1px solid #334155;
+    border-radius: 14px;
+    padding: 16px;
+    resize: vertical;
+}
+
+#groqGenerate {
+    margin-top: 20px;
+    width: 100%;
+    background: #2563eb;
+    color: white;
+    border: none;
+    padding: 16px;
+    border-radius: 14px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+#groqOutput {
+    margin-top: 20px;
+    background: black;
+    color: #4ade80;
+    padding: 20px;
+    border-radius: 14px;
+    min-height: 280px;
+    overflow: auto;
+    white-space: pre-wrap;
 }

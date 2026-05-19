@@ -1,45 +1,58 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>weave.web</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Weave.web</title>
+
+  <link rel="stylesheet" href="style.css" />
+
+  <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/loader.js"></script>
 </head>
 <body>
 
   <header>
-    <h1>weave.web AI</h1>
-    <p>AI powered by GROQ</p>
+    <h1>Weave.web</h1>
+
+    <div class="buttons">
+      <button id="compileBtn">Compile</button>
+      <button id="runBtn">Run</button>
+      <button id="downloadBtn">Download</button>
+    </div>
   </header>
 
   <main>
 
-    <section class="editor-panel">
-
-      <textarea id="prompt">
-Generate a weave.web landing page with dark mode
-      </textarea>
-
-      <button id="generateBtn">
-        Generate
-      </button>
-
+    <section class="editorPanel">
+      <div id="editor"></div>
     </section>
 
-    <section class="output-panel">
-
-      <h2>AI Output</h2>
-
-      <pre id="output">
-Ready...
-      </pre>
-
+    <section class="previewPanel">
+      <iframe id="preview"></iframe>
     </section>
 
   </main>
 
-  <script src="app.js"></script>
+  <script type="module" src="app.js"></script>
 
+    <aside id="groqSidebar">
+
+      <div class="groqHeader">
+        <h2>GROQ AI</h2>
+        <p>weave.web assistant</p>
+      </div>
+
+      <textarea id="groqPrompt"
+        placeholder="Generate a weave.web dashboard..."></textarea>
+
+      <button id="groqGenerate">
+        Generate
+      </button>
+
+      <pre id="groqOutput">AI Ready</pre>
+
+    </aside>
+    
+<script src='groq-sidebar.js'></script>
 </body>
 </html>
