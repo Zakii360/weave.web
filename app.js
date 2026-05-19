@@ -1,4 +1,3 @@
-
 let editor
 
 const ENDPOINT =
@@ -23,7 +22,7 @@ page Home {
 
     h1 "Hello from weave.web"
 
-    p "Runtime preview enabled"
+    p "AI Runtime Enabled"
 
     button #btn "Click Me"
 }
@@ -33,8 +32,8 @@ style {
     body {
         background: #0f172a
         color: white
-        font-family: Arial
         padding: 40px
+        font-family: Arial
     }
 
     button {
@@ -72,21 +71,21 @@ function parseWeave(source) {
   let js = ""
 
   const h1Matches =
-    [...source.matchAll(/h1\s+\"([^"]+)\"/g)]
+    [...source.matchAll(/h1\\s+\\"([^"]+)\\"/g)]
 
   h1Matches.forEach(match => {
     html += `<h1>${match[1]}</h1>`
   })
 
   const pMatches =
-    [...source.matchAll(/p\s+\"([^"]+)\"/g)]
+    [...source.matchAll(/p\\s+\\"([^"]+)\\"/g)]
 
   pMatches.forEach(match => {
     html += `<p>${match[1]}</p>`
   })
 
   const buttonMatches =
-    [...source.matchAll(/button\s+([^\s]+)\s+\"([^"]+)\"/g)]
+    [...source.matchAll(/button\\s+([^\\s]+)\\s+\\"([^"]+)\\"/g)]
 
   buttonMatches.forEach(match => {
 
@@ -101,45 +100,49 @@ function parseWeave(source) {
   })
 
   const bodyStyle =
-    source.match(/body\s*\{([\s\S]*?)\}/)
+    source.match(/body\\s*\\{([\\s\\S]*?)\\}/)
 
   if (bodyStyle) {
 
     css += `
       body {
         ${bodyStyle[1]
-          .replace(/\n/g, "")
-          .replace(/\s+/g, " ")}
+          .replace(/\\n/g, "")
+          .replace(/\\s+/g, " ")}
       }
     `
   }
 
   const buttonStyle =
-    source.match(/button\s*\{([\s\S]*?)\}/)
+    source.match(/button\\s*\\{([\\s\\S]*?)\\}/)
 
   if (buttonStyle) {
 
     css += `
       button {
         ${buttonStyle[1]
-          .replace(/\n/g, "")
-          .replace(/\s+/g, " ")}
+          .replace(/\\n/g, "")
+          .replace(/\\s+/g, " ")}
       }
     `
   }
 
-  if (source.includes('put("Runtime works!", "h1")')) {
+  js += `
+    document
+      .querySelectorAll("button")
+      .forEach(btn => {
 
-    js += `
-      document
-        .getElementById("btn")
-        ?.addEventListener("click", () => {
+        btn.addEventListener("click", () => {
 
-          document.querySelector("h1")
-            .innerText = "Runtime works!"
+          const h1 =
+            document.querySelector("h1")
+
+          if (h1) {
+            h1.innerText = "Runtime works!"
+          }
         })
-    `
-  }
+      })
+  `
 
   return `
     <html>
@@ -155,7 +158,7 @@ function parseWeave(source) {
 
         <script>
           ${js}
-        <\/script>
+        <\\/script>
 
       </body>
     </html>
@@ -163,6 +166,8 @@ function parseWeave(source) {
 }
 
 function compilePreview() {
+
+  if (!editor) return
 
   const source = editor.getValue()
 
@@ -176,15 +181,15 @@ function compilePreview() {
 
 document
   .getElementById("compileBtn")
-  .addEventListener("click", compilePreview)
+  ?.addEventListener("click", compilePreview)
 
 document
   .getElementById("runBtn")
-  .addEventListener("click", compilePreview)
+  ?.addEventListener("click", compilePreview)
 
 document
   .getElementById("downloadBtn")
-  .addEventListener("click", () => {
+  ?.addEventListener("click", () => {
 
     const blob = new Blob(
       [editor.getValue()],
@@ -201,6 +206,10 @@ document
 
     a.click()
   })
+
+/* =========================
+   GROQ AI SIDEBAR
+========================= */
 
 const promptBox =
   document.getElementById("groqPrompt")
@@ -219,7 +228,7 @@ const sidebar =
 
 let sidebarOpen = true
 
-toggle.addEventListener("click", () => {
+toggle?.addEventListener("click", () => {
 
   sidebarOpen = !sidebarOpen
 
@@ -237,54 +246,88 @@ toggle.addEventListener("click", () => {
   }
 })
 
-button.addEventListener("click", async () => {
+async function callGroq(prompt) {
+
+  const response = await fetch(
+    ENDPOINT,
+    {
+      method: "POST",
+      mode: "cors",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        prompt
+      })
+    }
+  )
+
+  const raw =
+    await response.text()
+
+  let data = {}
+
+  try {
+
+    data = JSON.parse(raw)
+
+  } catch {
+
+    throw new Error(raw)
+  }
+
+  if (!response.ok) {
+
+    throw new Error(
+      data.error || "Request failed"
+    )
+  }
+
+  if (!data.result) {
+
+    console.log(data)
+
+    throw new Error(
+      "AI returned no result."
+    )
+  }
+
+  return data.result
+}
+
+button?.addEventListener("click", async () => {
 
   const prompt =
     promptBox.value.trim()
 
   if (!prompt) {
+
     output.innerText =
       "Enter a prompt."
+
     return
   }
 
-  output.innerText = "Generating..."
+  output.innerText =
+    "Generating..."
 
   try {
 
-    const response = await fetch(
-      ENDPOINT,
-      {
-        method: "POST",
-        mode: "cors",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          prompt
-        })
-      }
-    )
+    const result =
+      await callGroq(prompt)
 
-    const data = await response.json()
+    output.innerText =
+      "AI generated app."
 
-    if (!data.success) {
-
-      output.innerText =
-        data.error
-
-      return
-    }
-
-    output.innerText = "AI generated app."
-
-    editor.setValue(data.result)
+    editor.setValue(result)
 
     compilePreview()
 
   } catch (err) {
 
+    console.error(err)
+
     output.innerText =
-      "Fetch failed: " + err.message
+      "AI Error:\\n\\n" + err.message
   }
 })
