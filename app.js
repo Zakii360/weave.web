@@ -1,6 +1,6 @@
 /* =============================================
    WEAVE.WEB — APP.JS (fixed)
-   AI: tvxugmumfvgnvjacwwfz.supabase.co
+   AI  endpoint (it's Groq, not sonnet): tvxugmumfvgnvjacwwfz.supabase.co
 ============================================= */
 
 const AI_ENDPOINT = "https://tvxugmumfvgnvjacwwfz.supabase.co/functions/v1/GROQAI"
@@ -161,7 +161,7 @@ require(['vs/editor/editor.main'], function () {
   monaco.languages.setMonarchTokensProvider('weave', {
     tokenizer: {
       root: [
-        [/@import\b.*/, 'keyword.directive'],
+        [/@[a-z]+\b.*/, 'keyword.directive'],
         [/\b(page|style|script|body|task|on|put|say|alert)\b/, 'keyword'],
         [/\b(h[1-6]|p|div|span|button|input|section|nav|header|footer|main)\b/, 'tag'],
         [/"[^"]*"/, 'string'],
