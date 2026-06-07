@@ -161,7 +161,7 @@ require(['vs/editor/editor.main'], function () {
   monaco.languages.setMonarchTokensProvider('weave', {
     tokenizer: {
       root: [
-        [/@import\b.*/, 'keyword.import'],
+        [/@import\b.*/, 'keyword.directive'],
         [/\b(page|style|script|body|task|on|put|say|alert)\b/, 'keyword'],
         [/\b(h[1-6]|p|div|span|button|input|section|nav|header|footer|main)\b/, 'tag'],
         [/"[^"]*"/, 'string'],
@@ -176,7 +176,7 @@ require(['vs/editor/editor.main'], function () {
     base: 'vs-dark',
     inherit: true,
     rules: [
-      { token: 'keyword.import', foreground: '818cf8', fontStyle: 'italic' },
+      { token: 'keyword.directive', foreground: '818cf8', fontStyle: 'italic' },
       { token: 'keyword',  foreground: '818cf8' },
       { token: 'tag',      foreground: '6ee7b7' },
       { token: 'string',   foreground: 'fb923c' },
@@ -476,26 +476,24 @@ document.getElementById('newWindowBtn').addEventListener('click', function () {
 })
 
 // Output / Preview tab toggle
-var previewTab = document.querySelector('.panel-tab.active')
-document.getElementById('outputTab').addEventListener('click', function () {
-  showingOutput = !showingOutput
-  var preview    = document.getElementById('preview')
-  var outputView = document.getElementById('outputView')
-  var outTab     = document.getElementById('outputTab')
-  var prvTabs    = document.querySelectorAll('.preview-panel .panel-tab')
+function showPreview() {
+  document.getElementById('preview').style.display    = 'block'
+  document.getElementById('outputView').style.display = 'none'
+  document.getElementById('previewTab').classList.add('active')
+  document.getElementById('outputTab').classList.remove('active')
+  showingOutput = false
+}
 
-  if (showingOutput) {
-    preview.style.display    = 'none'
-    outputView.style.display = 'block'
-    prvTabs.forEach(function(t){ t.classList.remove('active') })
-    outTab.classList.add('active')
-  } else {
-    preview.style.display    = 'block'
-    outputView.style.display = 'none'
-    outTab.classList.remove('active')
-    prvTabs[0].classList.add('active')
-  }
-})
+function showOutput() {
+  document.getElementById('preview').style.display    = 'none'
+  document.getElementById('outputView').style.display = 'block'
+  document.getElementById('outputTab').classList.add('active')
+  document.getElementById('previewTab').classList.remove('active')
+  showingOutput = true
+}
+
+document.getElementById('previewTab').addEventListener('click', showPreview)
+document.getElementById('outputTab').addEventListener('click', showOutput)
 
 // ── FILE TREE ─────────────────────────────────
 
