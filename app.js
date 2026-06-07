@@ -1,10 +1,9 @@
 /* =============================================
-   WEAVE.WEB — OVERHAULED APP.JS
-   AI endpoint: tvxugmumfvgnvjacwwfz.supabase.co
+   WEAVE.WEB — APP.JS (fixed)
+   AI: tvxugmumfvgnvjacwwfz.supabase.co
 ============================================= */
 
-const AI_ENDPOINT =
-  "https://tvxugmumfvgnvjacwwfz.supabase.co/functions/v1/GROQAI"
+const AI_ENDPOINT = "https://tvxugmumfvgnvjacwwfz.supabase.co/functions/v1/GROQAI"
 
 // ── EXAMPLES ──────────────────────────────────
 
@@ -67,6 +66,7 @@ page {
 
     body {
         h1 "Hello World"
+        p "Welcome to weave.web"
     }
 }`,
 
@@ -141,28 +141,33 @@ style {
 }`
 }
 
-// ── EDITOR SETUP ──────────────────────────────
+// ── GLOBALS ───────────────────────────────────
 
-let editor
+let editor = null
+let lastCompiledHTML = ''
+let showingOutput = false
+let aiOpen = false
+
+// ── MONACO SETUP ──────────────────────────────
 
 require.config({
-  paths: { vs: "https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs" }
+  paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs' }
 })
 
-require(["vs/editor/editor.main"], () => {
+require(['vs/editor/editor.main'], function () {
 
   // Register weave language
   monaco.languages.register({ id: 'weave' })
   monaco.languages.setMonarchTokensProvider('weave', {
     tokenizer: {
       root: [
-        [/@import\s+\w+\s+\w+/, 'keyword.import'],
-        [/\b(page|style|script|body|task|on|put|say)\b/, 'keyword'],
-        [/\b(h1|h2|h3|h4|h5|h6|p|div|span|button|input|section|nav|header|footer|main)\b/, 'tag'],
+        [/@import\b.*/, 'keyword.import'],
+        [/\b(page|style|script|body|task|on|put|say|alert)\b/, 'keyword'],
+        [/\b(h[1-6]|p|div|span|button|input|section|nav|header|footer|main)\b/, 'tag'],
         [/"[^"]*"/, 'string'],
-        [/#[\w-]+/, 'attribute.name'],
+        [/#[\w-]+/, 'type'],
         [/\/\/.*$/, 'comment'],
-        [/\{|\}/, 'delimiter.bracket'],
+        [/[{}]/, 'delimiter.bracket'],
       ]
     }
   })
@@ -172,30 +177,29 @@ require(["vs/editor/editor.main"], () => {
     inherit: true,
     rules: [
       { token: 'keyword.import', foreground: '818cf8', fontStyle: 'italic' },
-      { token: 'keyword', foreground: '818cf8' },
-      { token: 'tag', foreground: '6ee7b7' },
-      { token: 'string', foreground: 'fb923c' },
-      { token: 'attribute.name', foreground: '38bdf8' },
-      { token: 'comment', foreground: '4a4a6a', fontStyle: 'italic' },
+      { token: 'keyword',  foreground: '818cf8' },
+      { token: 'tag',      foreground: '6ee7b7' },
+      { token: 'string',   foreground: 'fb923c' },
+      { token: 'type',     foreground: '38bdf8' },
+      { token: 'comment',  foreground: '4a4a6a', fontStyle: 'italic' },
     ],
     colors: {
-      'editor.background': '#0a0a0f',
-      'editor.foreground': '#e8e8f0',
-      'editorLineNumber.foreground': '#2a2a40',
-      'editorLineNumber.activeForeground': '#4a4a6a',
-      'editor.selectionBackground': '#1e1e30',
-      'editor.lineHighlightBackground': '#0f0f1a',
-      'editorCursor.foreground': '#6ee7b7',
-      'editor.inactiveSelectionBackground': '#14142000',
+      'editor.background':               '#0a0a0f',
+      'editor.foreground':               '#e8e8f0',
+      'editorLineNumber.foreground':     '#2a2a40',
+      'editorLineNumber.activeForeground':'#4a4a6a',
+      'editor.selectionBackground':      '#1e1e3088',
+      'editor.lineHighlightBackground':  '#0f0f1a',
+      'editorCursor.foreground':         '#6ee7b7',
     }
   })
 
   editor = monaco.editor.create(
-    document.getElementById("editor"),
+    document.getElementById('editor'),
     {
       value: EXAMPLES.main,
-      language: "weave",
-      theme: "weave-dark",
+      language: 'weave',
+      theme: 'weave-dark',
       automaticLayout: true,
       fontFamily: "'JetBrains Mono', monospace",
       fontSize: 13,
@@ -206,13 +210,20 @@ require(["vs/editor/editor.main"], () => {
       cursorBlinking: 'smooth',
       smoothScrolling: true,
       padding: { top: 16, bottom: 16 },
+      wordWrap: 'off',
     }
   )
 
-  editor.onDidChangeCursorPosition(e => {
-    const { lineNumber: ln, column: col } = e.position
-    document.getElementById("lineColStatus").textContent =
-      `Ln ${ln}, Col ${col}`
+  editor.onDidChangeCursorPosition(function (e) {
+    document.getElementById('lineColStatus').textContent =
+      'Ln ' + e.position.lineNumber + ', Col ' + e.position.column
+  })
+
+  // Auto-compile on change (debounced)
+  var compileTimer
+  editor.onDidChangeModelContent(function () {
+    clearTimeout(compileTimer)
+    compileTimer = setTimeout(compileAndPreview, 600)
   })
 
   compileAndPreview()
@@ -220,337 +231,305 @@ require(["vs/editor/editor.main"], () => {
 
 // ── COMPILER ──────────────────────────────────
 
+function escapeHTML(s) {
+  return String(s)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+}
+
 function compileWeave(source) {
+  var clean = source.replace(/@import\s+\S+\s+\S+\n?/g, '').trim()
 
-  // Strip import lines for processing
-  const clean = source
-    .replace(/@import\s+\w+\s+\w+\n?/g, '')
-    .trim()
+  var title = 'weave.web'
+  var bodyHTML = ''
+  var rawCSS = ''
+  var rawJS = ''
 
-  let title = 'weave.web'
-  let bodyHTML = ''
-  let rawCSS = ''
-  let rawJS = ''
+  // Title
+  var titleM = clean.match(/title\s+"([^"]+)"/)
+  if (titleM) title = titleM[1]
 
-  // Extract title
-  const titleMatch = clean.match(/title\s+"([^"]+)"/)
-  if (titleMatch) title = titleMatch[1]
+  // Page block — find the outermost page/body block
+  var pageM = clean.match(/page(?:\s+\w+)?\s*\{([\s\S]*?)\n\}/)
+  if (pageM) bodyHTML = parseElements(pageM[1])
 
-  // Extract page/body block
-  const pageMatch = clean.match(/page(?:\s+\w+)?\s*\{([\s\S]*?)\n\}/)
-  if (pageMatch) {
-    const pageContent = pageMatch[1]
-    bodyHTML = parseElements(pageContent)
+  // Style block — greedy so it gets the full block
+  var styleM = clean.match(/style(?:\s+\w+)?\s*\{([\s\S]+?)\}(?=\s*(?:script|$))/m)
+  if (styleM) {
+    var styleBody = styleM[1].trim()
+    rawCSS = compileThreadCSS(styleBody)
   }
 
-  // Extract style block
-  const styleMatch = clean.match(/style(?:\s+\w+)?\s*\{([\s\S]*)\}[\s]*(?:script|$)/)
-  if (styleMatch) {
-    const styleSource = styleMatch[1].trim()
-    // Check if it's Thread syntax (no colons) or regular CSS (has colons)
-    const isThread = !styleSource.includes(':')
-    rawCSS = isThread ? compileThread(styleSource) : compileCSSLike(styleSource)
-  }
+  // Script block
+  var scriptM = clean.match(/script\s*\{([\s\S]+)\}[\s]*$/)
+  if (scriptM) rawJS = compileScript(scriptM[1].trim())
 
-  // Extract script block
-  const scriptMatch = clean.match(/script\s*\{([\s\S]*)\}[\s]*$/)
-  if (scriptMatch) {
-    rawJS = compileScript(scriptMatch[1].trim())
-  }
-
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>${escapeHTML(title)}</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    ${rawCSS}
-  </style>
-</head>
-<body>
-  ${bodyHTML}
-  <script>
-    ${rawJS}
-  <\/script>
-</body>
-</html>`
+  return '<!DOCTYPE html>\n<html lang="en">\n<head>\n' +
+    '  <meta charset="UTF-8">\n' +
+    '  <title>' + escapeHTML(title) + '</title>\n' +
+    '  <style>\n* { box-sizing: border-box; margin: 0; padding: 0; }\n' + rawCSS + '\n  </style>\n</head>\n<body>\n' +
+    '  ' + bodyHTML + '\n' +
+    '  <script>\n' + rawJS + '\n  <\/script>\n' +
+    '</body>\n</html>'
 }
 
 function parseElements(content) {
-  let html = ''
-  const lines = content.split('\n').map(l => l.trim()).filter(Boolean)
+  var html = ''
+  var lines = content.split('\n').map(function(l){ return l.trim() }).filter(Boolean)
 
-  for (const line of lines) {
-    // Detect block containers: div #id { or section Name {
-    // Skip title
-    if (line.startsWith('title ')) continue
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i]
+    if (!line || line.startsWith('title ')) continue
 
-    // h1-h6 with optional id and text
-    const hMatch = line.match(/^(h[1-6])(?:\s+id="([^"]+)")?\s+"([^"]+)"$/)
-    if (hMatch) {
-      const [, tag, id, text] = hMatch
-      html += `<${tag}${id ? ` id="${id}"` : ''}>${escapeHTML(text)}</${tag}>\n  `
-      continue
-    }
+    // h1–h6  [id="x"]  "text"
+    var hm = line.match(/^(h[1-6])(?:\s+id="([^"]+)")?\s+"([^"]+)"$/)
+    if (hm) { html += '<' + hm[1] + (hm[2] ? ' id="'+hm[2]+'"' : '') + '>' + escapeHTML(hm[3]) + '</' + hm[1] + '>\n  '; continue }
 
     // p
-    const pMatch = line.match(/^p(?:\s+id="([^"]+)")?\s+"([^"]+)"$/)
-    if (pMatch) {
-      const [, id, text] = pMatch
-      html += `<p${id ? ` id="${id}"` : ''}>${escapeHTML(text)}</p>\n  `
-      continue
-    }
+    var pm = line.match(/^p(?:\s+id="([^"]+)")?\s+"([^"]+)"$/)
+    if (pm) { html += '<p' + (pm[1] ? ' id="'+pm[1]+'"' : '') + '>' + escapeHTML(pm[2]) + '</p>\n  '; continue }
 
-    // button with #id shorthand
-    const btnMatch = line.match(/^button(?:\s+(#[\w-]+))?\s+"([^"]+)"$/)
-    if (btnMatch) {
-      const id = btnMatch[1] ? btnMatch[1].replace('#', '') : ''
-      const text = btnMatch[2]
-      html += `<button${id ? ` id="${id}"` : ''}>${escapeHTML(text)}</button>\n  `
-      continue
-    }
+    // button  [#id]  "text"
+    var bm = line.match(/^button(?:\s+(#[\w-]+))?\s+"([^"]+)"$/)
+    if (bm) { var bid = bm[1] ? bm[1].slice(1) : ''; html += '<button' + (bid ? ' id="'+bid+'"' : '') + '>' + escapeHTML(bm[2]) + '</button>\n  '; continue }
 
     // input
-    const inputMatch = line.match(/^input(?:\s+(#[\w-]+))?\s+(?:placeholder=)?"([^"]+)"$/)
-    if (inputMatch) {
-      const id = inputMatch[1] ? inputMatch[1].replace('#', '') : ''
-      html += `<input${id ? ` id="${id}"` : ''} placeholder="${escapeHTML(inputMatch[2])}" />\n  `
-      continue
-    }
+    var im = line.match(/^input(?:\s+(#[\w-]+))?\s+"([^"]+)"$/)
+    if (im) { var iid = im[1] ? im[1].slice(1) : ''; html += '<input' + (iid ? ' id="'+iid+'"' : '') + ' placeholder="' + escapeHTML(im[2]) + '" />\n  '; continue }
 
     // span
-    const spanMatch = line.match(/^span(?:\s+id="([^"]+)")?\s+"([^"]+)"$/)
-    if (spanMatch) {
-      html += `<span${spanMatch[1] ? ` id="${spanMatch[1]}"` : ''}>${escapeHTML(spanMatch[2])}</span>\n  `
-      continue
-    }
+    var sm = line.match(/^span(?:\s+id="([^"]+)")?\s+"([^"]+)"$/)
+    if (sm) { html += '<span' + (sm[1] ? ' id="'+sm[1]+'"' : '') + '>' + escapeHTML(sm[2]) + '</span>\n  '; continue }
 
-    // div or section with text
-    const divMatch = line.match(/^(div|section|header|nav|footer|main)(?:\s+(#[\w-]+))?\s+"([^"]+)"$/)
-    if (divMatch) {
-      const [, tag, idStr, text] = divMatch
-      const id = idStr ? idStr.replace('#', '') : ''
-      html += `<${tag}${id ? ` id="${id}"` : ''}>${escapeHTML(text)}</${tag}>\n  `
-      continue
-    }
+    // div / section / etc
+    var dm = line.match(/^(div|section|header|nav|footer|main|article)(?:\s+(#[\w-]+))?\s+"([^"]+)"$/)
+    if (dm) { var did = dm[2] ? dm[2].slice(1) : ''; html += '<'+dm[1]+(did?' id="'+did+'"':'')+'>'+escapeHTML(dm[3])+'</'+dm[1]+'>\n  '; continue }
   }
 
   return html
 }
 
-function compileCSSLike(source) {
-  // Standard CSS-like syntax (may have colons)
-  return source
-    .replace(/\n(\s+)(\w[\w-]*)(\s+)([^{;\n]+)(?!\s*\{)/g, '\n$1$2:$3$4')
-    .replace(/(\d+)px?(\s)/g, '$1px$2')
-    + '\n'
-}
-
-function compileThread(source) {
-  const aliases = {
-    bg: 'background', text: 'color', radius: 'border-radius',
-    size: 'font-size', weight: 'font-weight', pad: 'padding',
-    w: 'width', h: 'height', align: 'text-align', gap: 'gap', border: 'border'
+function compileThreadCSS(source) {
+  var aliases = {
+    bg:'background', text:'color', radius:'border-radius',
+    size:'font-size', weight:'font-weight', pad:'padding',
+    w:'width', h:'height', align:'text-align', gap:'gap', border:'border'
   }
-  const numericProps = ['padding','margin','border-radius','font-size','width','height','gap','min-height','max-width']
+  var numericProps = ['padding','margin','border-radius','font-size','width','height',
+    'gap','min-height','max-width','line-height','letter-spacing','top','left','right','bottom']
 
-  const lines = source.split('\n').map(l => l.trim()).filter(Boolean)
-  let css = ''
-  const stack = []
+  var lines = source.split('\n').map(function(l){ return l.trim() }).filter(Boolean)
+  var css = ''
+  var depth = 0
 
-  for (const line of lines) {
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i]
+
     if (line.endsWith('{')) {
-      const sel = line.replace('{', '').trim()
-      stack.push(sel)
-      css += `${sel} {\n`
+      var sel = line.slice(0, -1).trim()
+      css += sel + ' {\n'
+      depth++
       continue
     }
     if (line === '}') {
-      stack.pop()
       css += '}\n'
+      depth--
       continue
     }
+
+    var indent = '  '
 
     // Shorthand keywords
-    if (line === 'flex')   { css += '  display: flex;\n'; continue }
-    if (line === 'row')    { css += '  flex-direction: row;\n'; continue }
-    if (line === 'column') { css += '  flex-direction: column;\n'; continue }
-    if (line === 'center') { css += '  justify-content: center;\n  align-items: center;\n'; continue }
-    if (line === 'wrap')   { css += '  flex-wrap: wrap;\n'; continue }
+    if (line === 'flex')   { css += indent + 'display: flex;\n';             continue }
+    if (line === 'row')    { css += indent + 'flex-direction: row;\n';       continue }
+    if (line === 'column') { css += indent + 'flex-direction: column;\n';   continue }
+    if (line === 'center') { css += indent + 'justify-content: center;\n' + indent + 'align-items: center;\n'; continue }
+    if (line === 'wrap')   { css += indent + 'flex-wrap: wrap;\n';           continue }
+    if (line === 'relative') { css += indent + 'position: relative;\n';     continue }
+    if (line === 'absolute') { css += indent + 'position: absolute;\n';     continue }
+    if (line === 'fixed')    { css += indent + 'position: fixed;\n';        continue }
+    if (line === 'bold')     { css += indent + 'font-weight: bold;\n';      continue }
+    if (line === 'italic')   { css += indent + 'font-style: italic;\n';     continue }
+    if (line === 'pointer')  { css += indent + 'cursor: pointer;\n';        continue }
+    if (line === 'block')    { css += indent + 'display: block;\n';         continue }
+    if (line === 'inline')   { css += indent + 'display: inline;\n';        continue }
+    if (line === 'none')     { css += indent + 'display: none;\n';          continue }
 
-    // colon syntax: prop: value
-    const colonIdx = line.indexOf(':')
-    if (colonIdx > -1) {
-      let prop = line.slice(0, colonIdx).trim()
-      let val = line.slice(colonIdx + 1).trim()
-      prop = aliases[prop] || prop
-      if (numericProps.includes(prop)) {
-        val = val.split(' ').map(v => (!isNaN(v) && v !== '') ? v + 'px' : v).join(' ')
-      }
-      css += `  ${prop}: ${val};\n`
+    // Colon or space delimited property: value
+    var colonIdx = line.indexOf(':')
+    var spaceIdx = line.indexOf(' ')
+    var prop, val
+
+    if (colonIdx > 0) {
+      prop = line.slice(0, colonIdx).trim()
+      val  = line.slice(colonIdx + 1).trim()
+    } else if (spaceIdx > 0) {
+      prop = line.slice(0, spaceIdx).trim()
+      val  = line.slice(spaceIdx + 1).trim()
+    } else {
       continue
     }
 
-    // no-colon: prop value
-    const spIdx = line.indexOf(' ')
-    if (spIdx > -1) {
-      let prop = line.slice(0, spIdx).trim()
-      let val = line.slice(spIdx + 1).trim()
-      prop = aliases[prop] || prop
-      if (numericProps.includes(prop)) {
-        val = val.split(' ').map(v => (!isNaN(v) && v !== '') ? v + 'px' : v).join(' ')
-      }
-      css += `  ${prop}: ${val};\n`
+    prop = aliases[prop] || prop
+
+    if (numericProps.includes(prop)) {
+      val = val.split(/\s+/).map(function(v) {
+        return (!isNaN(v) && v !== '') ? v + 'px' : v
+      }).join(' ')
     }
+
+    css += indent + prop + ': ' + val + ';\n'
   }
 
   return css
 }
 
 function compileScript(source) {
-  let js = ''
+  var js = ''
 
-  // on("selector", "event", handler)
-  const onMatches = [...source.matchAll(/on\("([^"]+)",\s*"([^"]+)",\s*(\w+)\)/g)]
-  for (const m of onMatches) {
-    js += `document.querySelector("${m[1]}").addEventListener("${m[2]}", ${m[3]});\n`
+  // on("sel", "event", handler)
+  var onRe = /on\("([^"]+)",\s*"([^"]+)",\s*(\w+)\)/g
+  var om
+  while ((om = onRe.exec(source)) !== null) {
+    js += 'document.querySelector("' + om[1] + '").addEventListener("' + om[2] + '", ' + om[3] + ');\n'
   }
 
   // task name() { ... }
-  const taskMatches = [...source.matchAll(/task\s+(\w+)\s*\(\)\s*\{([\s\S]*?)\}/g)]
-  for (const m of taskMatches) {
-    const body = compileTaskBody(m[2].trim())
-    js += `function ${m[1]}() {\n  ${body}\n}\n`
+  var taskRe = /task\s+(\w+)\s*\(\)\s*\{([\s\S]*?)\}/g
+  var tm
+  while ((tm = taskRe.exec(source)) !== null) {
+    js += 'function ' + tm[1] + '() {\n  ' + compileTaskBody(tm[2].trim()) + '\n}\n'
   }
 
   return js
 }
 
 function compileTaskBody(body) {
-  let js = ''
-  const lines = body.split('\n').map(l => l.trim()).filter(Boolean)
-  for (const line of lines) {
-    // put("text", "selector")
-    const putMatch = line.match(/put\("([^"]+)",\s*"([^"]+)"\)/)
-    if (putMatch) {
-      js += `document.querySelector("${putMatch[2]}").innerText = "${putMatch[1]}";\n  `
-      continue
-    }
-    // say("text")
-    const sayMatch = line.match(/say\("([^"]+)"\)/)
-    if (sayMatch) { js += `console.log("${sayMatch[1]}");\n  `; continue }
-    // alert("text")
-    const alertMatch = line.match(/alert\("([^"]+)"\)/)
-    if (alertMatch) { js += `alert("${alertMatch[1]}");\n  `; continue }
+  var js = ''
+  var lines = body.split('\n').map(function(l){ return l.trim() }).filter(Boolean)
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i]
+    var putM = line.match(/put\("([^"]+)",\s*"([^"]+)"\)/)
+    if (putM) { js += 'document.querySelector("' + putM[2] + '").innerText = "' + putM[1] + '";\n  '; continue }
+    var sayM = line.match(/say\("([^"]+)"\)/)
+    if (sayM) { js += 'console.log("' + sayM[1] + '");\n  '; continue }
+    var alertM = line.match(/alert\("([^"]+)"\)/)
+    if (alertM) { js += 'alert("' + alertM[1] + '");\n  '; continue }
   }
   return js
 }
 
-function escapeHTML(s) {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
-}
-
-// ── PREVIEW ───────────────────────────────────
-
-let lastCompiledHTML = ''
+// ── COMPILE + PREVIEW ─────────────────────────
 
 function compileAndPreview() {
   if (!editor) return
-
-  const source = editor.getValue()
+  var source = editor.getValue()
   setStatus('loading', 'Compiling…')
 
   try {
-    const compiled = compileWeave(source)
+    var compiled = compileWeave(source)
     lastCompiledHTML = compiled
 
-    const preview = document.getElementById('preview')
-    const outputView = document.getElementById('outputView')
-
-    preview.srcdoc = compiled
-    outputView.textContent = compiled
+    document.getElementById('preview').srcdoc = compiled
+    document.getElementById('outputView').textContent = compiled
 
     setStatus('ok', 'Compiled')
   } catch (err) {
     setStatus('error', 'Error: ' + err.message)
+    console.error('Compile error:', err)
   }
 }
 
 function setStatus(type, msg) {
-  const dot = document.getElementById('compileIndicator')
-  const text = document.getElementById('compileStatus')
-  const navDot = document.getElementById('statusDot')
-  const navText = document.getElementById('statusText')
-
-  dot.className = 'status-indicator' + (type === 'error' ? ' error' : type === 'loading' ? ' loading' : '')
+  var dot    = document.getElementById('compileIndicator')
+  var text   = document.getElementById('compileStatus')
+  var navDot = document.getElementById('statusDot')
+  var navTxt = document.getElementById('statusText')
+  dot.className    = 'status-indicator' + (type === 'error' ? ' error' : type === 'loading' ? ' loading' : '')
   text.textContent = msg
   navDot.className = 'status-dot' + (type === 'error' ? ' error' : type === 'loading' ? ' loading' : '')
-  navText.textContent = msg
+  navTxt.textContent = msg
 }
 
 // ── TOOLBAR BUTTONS ───────────────────────────
 
-document.getElementById('compileBtn')?.addEventListener('click', compileAndPreview)
-document.getElementById('runBtn')?.addEventListener('click', compileAndPreview)
-document.getElementById('refreshBtn')?.addEventListener('click', compileAndPreview)
+document.getElementById('compileBtn').addEventListener('click', compileAndPreview)
+document.getElementById('runBtn').addEventListener('click', compileAndPreview)
+document.getElementById('refreshBtn').addEventListener('click', compileAndPreview)
 
-document.getElementById('downloadBtn')?.addEventListener('click', () => {
-  const source = editor?.getValue() || ''
-  const blob = new Blob([source], { type: 'text/plain' })
-  const a = document.createElement('a')
+document.getElementById('downloadBtn').addEventListener('click', function () {
+  var source = editor ? editor.getValue() : ''
+  var blob = new Blob([source], { type: 'text/plain' })
+  var a = document.createElement('a')
   a.href = URL.createObjectURL(blob)
   a.download = document.getElementById('currentFile').textContent || 'app.web'
   a.click()
 })
 
-document.getElementById('newWindowBtn')?.addEventListener('click', () => {
+document.getElementById('newWindowBtn').addEventListener('click', function () {
   if (!lastCompiledHTML) return
-  const w = window.open()
+  var w = window.open('', '_blank')
   w.document.write(lastCompiledHTML)
   w.document.close()
 })
 
-// Output tab toggle
-let showingOutput = false
-document.getElementById('outputTab')?.addEventListener('click', () => {
+// Output / Preview tab toggle
+var previewTab = document.querySelector('.panel-tab.active')
+document.getElementById('outputTab').addEventListener('click', function () {
   showingOutput = !showingOutput
-  const preview = document.getElementById('preview')
-  const outputView = document.getElementById('outputView')
-  const tab = document.getElementById('outputTab')
+  var preview    = document.getElementById('preview')
+  var outputView = document.getElementById('outputView')
+  var outTab     = document.getElementById('outputTab')
+  var prvTabs    = document.querySelectorAll('.preview-panel .panel-tab')
 
   if (showingOutput) {
-    preview.style.display = 'none'
+    preview.style.display    = 'none'
     outputView.style.display = 'block'
-    tab.classList.add('active')
+    prvTabs.forEach(function(t){ t.classList.remove('active') })
+    outTab.classList.add('active')
   } else {
-    preview.style.display = 'block'
+    preview.style.display    = 'block'
     outputView.style.display = 'none'
-    tab.classList.remove('active')
+    outTab.classList.remove('active')
+    prvTabs[0].classList.add('active')
   }
 })
 
 // ── FILE TREE ─────────────────────────────────
 
-document.querySelectorAll('.tree-file').forEach(item => {
-  item.addEventListener('click', () => {
-    document.querySelectorAll('.tree-file').forEach(f => f.classList.remove('active'))
+document.querySelectorAll('.tree-file').forEach(function (item) {
+  item.addEventListener('click', function () {
+    document.querySelectorAll('.tree-file').forEach(function(f){ f.classList.remove('active') })
     item.classList.add('active')
 
-    const exKey = item.dataset.example
-    if (exKey && EXAMPLES[exKey] && editor) {
-      editor.setValue(EXAMPLES[exKey])
-      const name = item.querySelector('span:last-child').textContent
-      document.getElementById('currentFile').textContent = name
-      document.getElementById('editorTabLabel').textContent = name
-      document.getElementById('editorBreadcrumb').textContent = name
-      compileAndPreview()
+    var key = item.dataset.example
+    var name = item.querySelector('span:last-child').textContent
+    document.getElementById('currentFile').textContent    = name
+    document.getElementById('editorTabLabel').textContent  = name
+    document.getElementById('editorBreadcrumb').textContent = name
+
+    if (key && EXAMPLES[key]) {
+      if (editor) {
+        editor.setValue(EXAMPLES[key])
+        compileAndPreview()
+      } else {
+        // Editor not loaded yet — wait for it
+        var waitForEditor = setInterval(function () {
+          if (editor) {
+            clearInterval(waitForEditor)
+            editor.setValue(EXAMPLES[key])
+            compileAndPreview()
+          }
+        }, 100)
+      }
     }
   })
 })
 
-// Keyboard shortcut
-document.addEventListener('keydown', e => {
+// Keyboard shortcut: Ctrl/Cmd + Enter → compile
+document.addEventListener('keydown', function (e) {
   if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
     e.preventDefault()
     compileAndPreview()
@@ -559,18 +538,14 @@ document.addEventListener('keydown', e => {
 
 // ── AI PANEL ──────────────────────────────────
 
-const aiPanel    = document.getElementById('aiPanel')
-const aiToggle   = document.getElementById('aiToggle')
-const aiClose    = document.getElementById('aiClose')
-const aiPrompt   = document.getElementById('aiPrompt')
-const aiSend     = document.getElementById('aiSend')
-const aiChat     = document.getElementById('aiChat')
-const sendCtx    = document.getElementById('sendContext')
-
-let aiOpen = false
+var aiPanel  = document.getElementById('aiPanel')
+var aiChat   = document.getElementById('aiChat')
+var aiPrompt = document.getElementById('aiPrompt')
+var aiSend   = document.getElementById('aiSend')
+var sendCtx  = document.getElementById('sendContext')
 
 function toggleAI(open) {
-  aiOpen = open !== undefined ? open : !aiOpen
+  aiOpen = (open !== undefined) ? open : !aiOpen
   if (aiOpen) {
     aiPanel.classList.add('open')
     document.getElementById('aiToggleLabel').textContent = 'Close AI'
@@ -580,47 +555,44 @@ function toggleAI(open) {
   }
 }
 
-aiToggle?.addEventListener('click', () => toggleAI())
-aiClose?.addEventListener('click', () => toggleAI(false))
+document.getElementById('aiToggle').addEventListener('click', function(){ toggleAI() })
+document.getElementById('aiClose').addEventListener('click', function(){ toggleAI(false) })
 
-// AI chips
-document.querySelectorAll('.ai-chip').forEach(chip => {
-  chip.addEventListener('click', () => {
+document.querySelectorAll('.ai-chip').forEach(function (chip) {
+  chip.addEventListener('click', function () {
     aiPrompt.value = chip.dataset.prompt
     if (!aiOpen) toggleAI(true)
     aiPrompt.focus()
   })
 })
 
-aiPrompt?.addEventListener('keydown', e => {
+aiPrompt.addEventListener('keydown', function (e) {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault()
     sendAIMessage()
   }
 })
 
-aiSend?.addEventListener('click', sendAIMessage)
+aiSend.addEventListener('click', sendAIMessage)
 
 function appendMessage(role, content, code) {
-  const msg = document.createElement('div')
-  msg.className = `ai-message ${role === 'user' ? 'ai-message-user' : 'ai-message-system'}`
+  var msg    = document.createElement('div')
+  var avatar = document.createElement('div')
+  var bubble = document.createElement('div')
 
-  const avatar = document.createElement('div')
+  msg.className    = 'ai-message ' + (role === 'user' ? 'ai-message-user' : 'ai-message-system')
   avatar.className = 'ai-avatar'
   avatar.textContent = role === 'user' ? 'U' : 'W'
-
-  const bubble = document.createElement('div')
   bubble.className = 'ai-bubble'
 
   if (code) {
-    // Has code block
-    const pre = document.createElement('pre')
+    var pre = document.createElement('pre')
     pre.textContent = code
 
-    const insertBtn = document.createElement('button')
-    insertBtn.className = 'ai-insert-btn'
-    insertBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1V11M1 6H11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg> Insert into editor`
-    insertBtn.addEventListener('click', () => {
+    var btn = document.createElement('button')
+    btn.className = 'ai-insert-btn'
+    btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1V11M1 6H11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg> Insert into editor'
+    btn.addEventListener('click', function () {
       if (editor) {
         editor.setValue(code)
         compileAndPreview()
@@ -628,18 +600,20 @@ function appendMessage(role, content, code) {
       }
     })
 
-    // Text before code block
-    const textParts = content.split(/```[\w]*\n[\s\S]*?```/g)
-    if (textParts[0]) {
-      const textEl = document.createElement('p')
-      textEl.style.marginBottom = '8px'
-      textEl.textContent = textParts[0].trim()
-      bubble.appendChild(textEl)
+    // Text before the code block
+    var textBefore = content.split(/```[\w]*\n[\s\S]*?```/)[0].trim()
+    if (textBefore) {
+      var p = document.createElement('p')
+      p.style.marginBottom = '8px'
+      p.textContent = textBefore
+      bubble.appendChild(p)
     }
     bubble.appendChild(pre)
-    bubble.appendChild(insertBtn)
+    bubble.appendChild(btn)
   } else {
+    // Render inline code and line breaks
     bubble.innerHTML = content
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
       .replace(/`([^`]+)`/g, '<code>$1</code>')
       .replace(/\n/g, '<br>')
   }
@@ -652,20 +626,16 @@ function appendMessage(role, content, code) {
 }
 
 function appendThinking() {
-  const msg = document.createElement('div')
-  msg.className = 'ai-message ai-message-system'
-  msg.id = 'thinking-msg'
+  var msg    = document.createElement('div')
+  var avatar = document.createElement('div')
+  var bubble = document.createElement('div')
 
-  const avatar = document.createElement('div')
+  msg.className    = 'ai-message ai-message-system'
+  msg.id           = 'thinking-msg'
   avatar.className = 'ai-avatar'
   avatar.textContent = 'W'
-
-  const bubble = document.createElement('div')
-  bubble.className = 'ai-bubble ai-thinking'
-  bubble.innerHTML = `<span>Thinking</span>
-    <span class="thinking-dots">
-      <span></span><span></span><span></span>
-    </span>`
+  bubble.className   = 'ai-bubble ai-thinking'
+  bubble.innerHTML   = '<span>Thinking</span><span class="thinking-dots"><span></span><span></span><span></span></span>'
 
   msg.appendChild(avatar)
   msg.appendChild(bubble)
@@ -675,68 +645,57 @@ function appendThinking() {
 }
 
 async function sendAIMessage() {
-  const prompt = aiPrompt.value.trim()
+  var prompt = aiPrompt.value.trim()
   if (!prompt) return
 
   appendMessage('user', prompt)
   aiPrompt.value = ''
   aiSend.disabled = true
 
-  let fullPrompt = prompt
+  var fullPrompt = prompt
   if (sendCtx.checked && editor) {
-    const code = editor.getValue()
-    fullPrompt = `You are an expert weave.web developer. The user is working in the weave.web IDE.
-
-Weave.web language reference:
-- Pages: page Name { h1 "text"  p "text"  button #id "text" }
-- Thread CSS: style { selector { prop: value  flex  center  row  column } }
-- Script: script { on("#id", "event", handler)  task name() { put("text", "#sel") } }
-- Imports: @import HTML body | @import Thread style | @import JS ff
-
-Current editor code:
-\`\`\`
-${code}
-\`\`\`
-
-User request: ${prompt}
-
-IMPORTANT: If you generate code, wrap it in a single \`\`\`weave ... \`\`\` code block. Keep explanations brief.`
+    var code = editor.getValue()
+    fullPrompt = 'You are an expert weave.web developer assistant. weave.web is a language that compiles to HTML/CSS/JS.\n\n' +
+      'Weave.web language reference:\n' +
+      '- Imports: @import HTML body | @import Thread style | @import JS ff\n' +
+      '- Page block: page Name { h1 "text"  p "text"  button #id "text"  input #id "placeholder" }\n' +
+      '- Thread CSS: style { selector { prop: value  OR  prop value } keywords: flex center row column wrap bold pointer }\n' +
+      '- Script: script { on("#id", "event", handler)  task name() { put("text", "#sel")  alert("msg") } }\n\n' +
+      'Current editor code:\n```\n' + code + '\n```\n\n' +
+      'User request: ' + prompt + '\n\n' +
+      'If generating code, wrap it in a single ```weave code block. Keep explanations brief.'
   }
 
-  const thinking = appendThinking()
+  var thinking = appendThinking()
 
   try {
-    const resp = await fetch(AI_ENDPOINT, {
+    var resp = await fetch(AI_ENDPOINT, {
       method: 'POST',
       mode: 'cors',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prompt: fullPrompt })
     })
 
-    const raw = await resp.text()
-    let data = {}
+    var raw = await resp.text()
+    var data = {}
+    try { data = JSON.parse(raw) } catch(e) { throw new Error(raw) }
 
-    try { data = JSON.parse(raw) } catch { throw new Error(raw) }
+    if (!resp.ok) throw new Error(data.error || 'HTTP ' + resp.status)
 
-    if (!resp.ok) throw new Error(data.error || `HTTP ${resp.status}`)
-
-    const result = data.result || data.content || ''
+    var result = data.result || data.content || ''
     if (!result) throw new Error('AI returned no result.')
 
     thinking.remove()
 
-    // Extract code block if present
-    const codeMatch = result.match(/```(?:weave|web)?\n([\s\S]*?)```/)
+    var codeMatch = result.match(/```(?:weave|web)?\n([\s\S]*?)```/)
     if (codeMatch) {
-      const code = codeMatch[1].trim()
-      appendMessage('assistant', result, code)
+      appendMessage('assistant', result, codeMatch[1].trim())
     } else {
       appendMessage('assistant', result)
     }
-
   } catch (err) {
     thinking.remove()
-    appendMessage('assistant', `⚠️ Error: ${err.message}`)
+    appendMessage('assistant', '⚠️ Error: ' + err.message)
   } finally {
     aiSend.disabled = false
   }
