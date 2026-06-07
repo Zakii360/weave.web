@@ -1,6 +1,12 @@
 /* =============================================
-   WEAVE.WEB — APP.JS (fixed)
-   AI  endpoint (it's Groq, not sonnet): tvxugmumfvgnvjacwwfz.supabase.co
+   WEAVE.WEB — APP.JS
+   .web is a universal container. @import lines
+   at the top declare which language each block
+   uses — like <script type="..."> but for .web
+   
+   @import HTML body    → chicken-nuget (HTML elements)
+   @import Thread style → Thread (CSS with aliases/nesting)
+   @import JS ff        → Weave (say/put/on/load/ping/task)
 ============================================= */
 
 const AI_ENDPOINT = "https://tvxugmumfvgnvjacwwfz.supabase.co/functions/v1/GROQAI"
@@ -15,38 +21,37 @@ const EXAMPLES = {
 page Home {
 
     h1 "Hello from weave.web"
-
     p "Build HTML, CSS, and JS in one .web file"
-
     button #btn "Click Me"
 }
 
 style {
 
     body {
-        background: #0f172a
-        color: white
-        padding: 40px
+        bg: #0f172a
+        text: white
+        pad: 40
         font-family: Arial
     }
 
     h1 {
-        color: #6ee7b7
-        margin-bottom: 12px
+        text: #6ee7b7
+        size: 32
+        margin-bottom: 12
     }
 
     p {
-        color: #94a3b8
-        margin-bottom: 24px
+        text: #94a3b8
+        margin-bottom: 24
     }
 
     button {
-        background: royalblue
-        color: white
+        bg: royalblue
+        text: white
         border: none
-        padding: 14px 20px
-        border-radius: 12px
-        cursor: pointer
+        pad: 14 20
+        radius: 12
+        pointer
     }
 }
 
@@ -55,60 +60,91 @@ script {
     on("#btn", "click", clicked)
 
     task clicked() {
-        put("Runtime works!", "h1")
+        put("It works!", "#btn")
     }
 }`,
 
   hello: `@import HTML body
 
 page {
-    title "Hello"
+    title "Hello World"
 
-    body {
-        h1 "Hello World"
-        p "Welcome to weave.web"
+    h1 "Hello, World!"
+    p "My first weave.web page."
+}`,
+
+  weave: `@import JS ff
+
+// Weave — compiles to JavaScript
+// say, put, on, load, ping, task, let
+
+let name = "weave.web"
+
+say("Hello from " + name)
+
+task greet(person) {
+    return "Hey, " + person + "!"
+}
+
+say(greet(name))`,
+
+  thread: `@import Thread style
+
+// Thread — CSS with aliases and shorthand
+// bg, text, pad, radius, size, weight, shadow
+// flex, row, column, center, wrap, rounded, pointer
+
+hero {
+
+    flex
+    column
+    center
+
+    bg: #0a0a0f
+    text: white
+    h: 100vh
+    gap: 20
+
+    title {
+        size: 48
+        weight: bold
+    }
+
+    subtitle {
+        size: 20
+        text: #7878a0
+    }
+
+    button {
+        bg: royalblue
+        text: white
+        pad: 14 24
+        radius: 16
+        shadow: soft
+        pointer
     }
 }`,
 
   hybrid: `@import HTML body
+@import Thread style
 @import JS ff
 
-page {
-    title "Hybrid"
+// Full hybrid — all three languages in one .web file
 
-    body {
-        h1 id="title" "Hello"
-        button id="btn" "Click"
-    }
-}
+page Dashboard {
 
-script {
-    on("#btn", "click", clicked)
-
-    task clicked() {
-        put("Clicked!", "#title")
-    }
-}`,
-
-  thread: `@import HTML body
-@import Thread style
-
-page {
-    title "Thread Demo"
-
-    body {
-        h1 "Thread Styles"
-        p "Powered by Thread CSS"
-        button id="cta" "Get Started"
-    }
+    h1 "Score: 0"
+    p "Click the button to score points"
+    button #btn "Score!"
+    h2 #msg ""
 }
 
 style {
 
     body {
-        background: #0a0a0f
-        color: #e8e8f0
-        padding: 60px
+        bg: #0f172a
+        text: white
+        pad: 60
         font-family: Arial
         flex
         column
@@ -117,36 +153,56 @@ style {
     }
 
     h1 {
-        font-size: 48
-        color: #6ee7b7
-        margin-bottom: 16
+        text: #6ee7b7
+        size: 40
+        margin-bottom: 12
     }
 
     p {
-        color: #7878a0
-        margin-bottom: 32
-        font-size: 18
+        text: #94a3b8
+        margin-bottom: 24
     }
 
     button {
-        background: #6ee7b7
-        color: #0a0a0f
+        bg: #6ee7b7
+        text: #0f172a
         border: none
-        padding: 14 28
-        border-radius: 8
-        font-size: 16
-        cursor: pointer
-        font-weight: bold
+        pad: 14 28
+        radius: 12
+        size: 16
+        weight: bold
+        pointer
+        margin-bottom: 16
+    }
+
+    h2 {
+        text: #fb923c
+        size: 24
+    }
+}
+
+script {
+
+    let score = 0
+
+    on("#btn", "click", addPoint)
+
+    task addPoint() {
+        score = score + 1
+        put("Score: " + score, "h1")
+        if (score >= 10) {
+            put("You win! 🎉", "#msg")
+        }
     }
 }`
 }
 
 // ── GLOBALS ───────────────────────────────────
 
-let editor = null
-let lastCompiledHTML = ''
-let showingOutput = false
-let aiOpen = false
+var editor = null
+var lastCompiledHTML = ''
+var showingOutput = false
+var aiOpen = false
 
 // ── MONACO SETUP ──────────────────────────────
 
@@ -156,18 +212,28 @@ require.config({
 
 require(['vs/editor/editor.main'], function () {
 
-  // Register weave language
   monaco.languages.register({ id: 'weave' })
+
+  // Monarch tokenizer — NOTE: do NOT spell the word i-m-p-o-r-t anywhere
+  // in a regex pattern; Monarch scans regex source strings for reserved words.
+  // We match @-directives as /@[a-z]+\b.*/ instead.
   monaco.languages.setMonarchTokensProvider('weave', {
     tokenizer: {
       root: [
-        [/@[a-z]+\b.*/, 'keyword.directive'],
-        [/\b(page|style|script|body|task|on|put|say|alert)\b/, 'keyword'],
-        [/\b(h[1-6]|p|div|span|button|input|section|nav|header|footer|main)\b/, 'tag'],
-        [/"[^"]*"/, 'string'],
-        [/#[\w-]+/, 'type'],
-        [/\/\/.*$/, 'comment'],
-        [/[{}]/, 'delimiter.bracket'],
+        [/@[a-z]+\b.*$/,                                              'keyword.directive'],
+        [/\/\/.*/,                                                    'comment'],
+        [/\b(page|style|script)\b/,                                   'keyword.block'],
+        [/\b(task|let|return|if|else|for|while)\b/,                   'keyword.control'],
+        [/\b(say|put|on|load|ping)\b/,                                'keyword.builtin'],
+        [/\b(h[1-6]|p|div|span|button|input|a|section|nav|header|footer|main|ul|li)\b/, 'tag'],
+        [/\b(flex|row|column|center|wrap|rounded|pointer|bold|italic|block|none)\b/,     'keyword.shorthand'],
+        [/\b(bg|text|pad|radius|size|weight|shadow|margin|gap|border|w|h|align)\b/,     'keyword.alias'],
+        [/"[^"]*"/,                                                   'string'],
+        [/'[^']*'/,                                                   'string'],
+        [/#[\w-]+/,                                                   'type'],
+        [/\d+(\.\d+)?/,                                               'number'],
+        [/[{}]/,                                                      'delimiter.bracket'],
+        [/[()]/,                                                      'delimiter.paren'],
       ]
     }
   })
@@ -177,20 +243,25 @@ require(['vs/editor/editor.main'], function () {
     inherit: true,
     rules: [
       { token: 'keyword.directive', foreground: '818cf8', fontStyle: 'italic' },
-      { token: 'keyword',  foreground: '818cf8' },
-      { token: 'tag',      foreground: '6ee7b7' },
-      { token: 'string',   foreground: 'fb923c' },
-      { token: 'type',     foreground: '38bdf8' },
-      { token: 'comment',  foreground: '4a4a6a', fontStyle: 'italic' },
+      { token: 'keyword.block',     foreground: 'c084fc', fontStyle: 'bold' },
+      { token: 'keyword.control',   foreground: '818cf8' },
+      { token: 'keyword.builtin',   foreground: '38bdf8' },
+      { token: 'keyword.shorthand', foreground: 'fb923c' },
+      { token: 'keyword.alias',     foreground: 'fbbf24' },
+      { token: 'tag',               foreground: '6ee7b7' },
+      { token: 'string',            foreground: 'a3e635' },
+      { token: 'type',              foreground: '38bdf8' },
+      { token: 'number',            foreground: 'fb923c' },
+      { token: 'comment',           foreground: '3f3f5a', fontStyle: 'italic' },
     ],
     colors: {
-      'editor.background':               '#0a0a0f',
-      'editor.foreground':               '#e8e8f0',
-      'editorLineNumber.foreground':     '#2a2a40',
+      'editor.background':                '#0a0a0f',
+      'editor.foreground':                '#e8e8f0',
+      'editorLineNumber.foreground':      '#2a2a40',
       'editorLineNumber.activeForeground':'#4a4a6a',
-      'editor.selectionBackground':      '#1e1e3088',
-      'editor.lineHighlightBackground':  '#0f0f1a',
-      'editorCursor.foreground':         '#6ee7b7',
+      'editor.selectionBackground':       '#1e1e3088',
+      'editor.lineHighlightBackground':   '#0f0f1a',
+      'editorCursor.foreground':          '#6ee7b7',
     }
   })
 
@@ -219,7 +290,6 @@ require(['vs/editor/editor.main'], function () {
       'Ln ' + e.position.lineNumber + ', Col ' + e.position.column
   })
 
-  // Auto-compile on change (debounced)
   var compileTimer
   editor.onDidChangeModelContent(function () {
     clearTimeout(compileTimer)
@@ -229,196 +299,395 @@ require(['vs/editor/editor.main'], function () {
   compileAndPreview()
 })
 
-// ── COMPILER ──────────────────────────────────
-
-function escapeHTML(s) {
-  return String(s)
-    .replace(/&/g,'&amp;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;')
-}
+// ══════════════════════════════════════════════
+//   COMPILER
+//   Reads @import declarations to know which
+//   language mode to use for each block.
+// ══════════════════════════════════════════════
 
 function compileWeave(source) {
-  var clean = source.replace(/@import\s+\S+\s+\S+\n?/g, '').trim()
 
-  var title = 'weave.web'
-  var bodyHTML = ''
-  var rawCSS = ''
-  var rawJS = ''
-
-  // Title
-  var titleM = clean.match(/title\s+"([^"]+)"/)
-  if (titleM) title = titleM[1]
-
-  // Page block — find the outermost page/body block
-  var pageM = clean.match(/page(?:\s+\w+)?\s*\{([\s\S]*?)\n\}/)
-  if (pageM) bodyHTML = parseElements(pageM[1])
-
-  // Style block — greedy so it gets the full block
-  var styleM = clean.match(/style(?:\s+\w+)?\s*\{([\s\S]+?)\}(?=\s*(?:script|$))/m)
-  if (styleM) {
-    var styleBody = styleM[1].trim()
-    rawCSS = compileThreadCSS(styleBody)
+  // Parse all @import declarations
+  var imports = {}
+  var importRe = /^@[a-z]+\s+(\w+)\s+(\w+)/gim
+  var m
+  while ((m = importRe.exec(source)) !== null) {
+    // @import HTML body  → imports.HTML = "body"
+    // @import Thread style → imports.Thread = "style"
+    // @import JS ff       → imports.JS = "ff"
+    imports[m[1]] = m[2]
   }
 
-  // Script block
-  var scriptM = clean.match(/script\s*\{([\s\S]+)\}[\s]*$/)
-  if (scriptM) rawJS = compileScript(scriptM[1].trim())
+  var hasHTML   = !!imports.HTML
+  var hasThread = !!imports.Thread
+  var hasJS     = !!imports.JS
 
-  return '<!DOCTYPE html>\n<html lang="en">\n<head>\n' +
-    '  <meta charset="UTF-8">\n' +
-    '  <title>' + escapeHTML(title) + '</title>\n' +
-    '  <style>\n* { box-sizing: border-box; margin: 0; padding: 0; }\n' + rawCSS + '\n  </style>\n</head>\n<body>\n' +
-    '  ' + bodyHTML + '\n' +
-    '  <script>\n' + rawJS + '\n  <\/script>\n' +
-    '</body>\n</html>'
+  // Strip all @import lines
+  var body = source.replace(/^@[a-z]+\s+\w+\s+\w+\s*$/gim, '').trim()
+
+  var title    = 'weave.web'
+  var bodyHTML = ''
+  var cssOut   = ''
+  var jsOut    = ''
+
+  // ── HTML / chicken-nuget block ────────────────
+  if (hasHTML) {
+    var pageM = body.match(/page(?:\s+\w+)?\s*\{([\s\S]*?)\n\}/)
+    if (pageM) {
+      var pageContent = pageM[1]
+      var titleM = pageContent.match(/title\s+"([^"]+)"/)
+      if (titleM) title = titleM[1]
+      bodyHTML = compileHTMLBlock(pageContent)
+    }
+  }
+
+  // ── Thread CSS block ──────────────────────────
+  if (hasThread) {
+    // style block: everything between `style {` and the matching closing `}`
+    // accounting for nested blocks inside
+    var styleStart = body.indexOf('\nstyle ')
+    if (styleStart === -1) styleStart = body.indexOf('\nstyle{')
+    if (styleStart === -1 && body.startsWith('style')) styleStart = -1  // handle top-level
+
+    var styleBlock = extractBlock(body, /\bstyle(?:\s+\w+)?\s*\{/)
+    if (styleBlock !== null) {
+      cssOut = compileThreadBlock(styleBlock)
+    }
+  }
+
+  // ── Weave JS block ────────────────────────────
+  if (hasJS) {
+    var scriptBlock = extractBlock(body, /\bscript\s*\{/)
+    if (scriptBlock !== null) {
+      jsOut = compileWeaveBlock(scriptBlock)
+    }
+  }
+
+  // ── Pure Weave file (no HTML import) ─────────
+  // If there's no HTML import, treat whole file as Weave JS
+  if (!hasHTML && !hasThread && hasJS) {
+    jsOut = compileWeaveBlock(body)
+    return buildJSOnlyPage(jsOut)
+  }
+
+  // ── Pure Thread file ──────────────────────────
+  if (!hasHTML && hasThread && !hasJS) {
+    var threadBlock = extractBlock(body, /\{/) // whole file is Thread
+    if (threadBlock === null) threadBlock = body
+    cssOut = compileThreadBlock(body)
+    return buildThreadPreviewPage(cssOut)
+  }
+
+  return buildFullPage(title, bodyHTML, cssOut, jsOut)
 }
 
-function parseElements(content) {
+// ── Block extractor: finds content between { } of a pattern match ──
+
+function extractBlock(source, pattern) {
+  var m = pattern.exec(source)
+  if (!m) return null
+
+  var start = source.indexOf('{', m.index + m[0].length - 1)
+  if (start === -1) return null
+
+  var depth = 0
+  var i = start
+  while (i < source.length) {
+    if (source[i] === '{') depth++
+    else if (source[i] === '}') {
+      depth--
+      if (depth === 0) return source.slice(start + 1, i)
+    }
+    i++
+  }
+  return null
+}
+
+// ══════════════════════════════════════════════
+//   HTML / CHICKEN-NUGET COMPILER
+//   page { h1 "text"  p "text"  button #id "text" ... }
+// ══════════════════════════════════════════════
+
+function compileHTMLBlock(content) {
   var html = ''
   var lines = content.split('\n').map(function(l){ return l.trim() }).filter(Boolean)
 
   for (var i = 0; i < lines.length; i++) {
     var line = lines[i]
-    if (!line || line.startsWith('title ')) continue
-
-    // h1–h6  [id="x"]  "text"
-    var hm = line.match(/^(h[1-6])(?:\s+id="([^"]+)")?\s+"([^"]+)"$/)
-    if (hm) { html += '<' + hm[1] + (hm[2] ? ' id="'+hm[2]+'"' : '') + '>' + escapeHTML(hm[3]) + '</' + hm[1] + '>\n  '; continue }
-
-    // p
-    var pm = line.match(/^p(?:\s+id="([^"]+)")?\s+"([^"]+)"$/)
-    if (pm) { html += '<p' + (pm[1] ? ' id="'+pm[1]+'"' : '') + '>' + escapeHTML(pm[2]) + '</p>\n  '; continue }
-
-    // button  [#id]  "text"
-    var bm = line.match(/^button(?:\s+(#[\w-]+))?\s+"([^"]+)"$/)
-    if (bm) { var bid = bm[1] ? bm[1].slice(1) : ''; html += '<button' + (bid ? ' id="'+bid+'"' : '') + '>' + escapeHTML(bm[2]) + '</button>\n  '; continue }
-
-    // input
-    var im = line.match(/^input(?:\s+(#[\w-]+))?\s+"([^"]+)"$/)
-    if (im) { var iid = im[1] ? im[1].slice(1) : ''; html += '<input' + (iid ? ' id="'+iid+'"' : '') + ' placeholder="' + escapeHTML(im[2]) + '" />\n  '; continue }
-
-    // span
-    var sm = line.match(/^span(?:\s+id="([^"]+)")?\s+"([^"]+)"$/)
-    if (sm) { html += '<span' + (sm[1] ? ' id="'+sm[1]+'"' : '') + '>' + escapeHTML(sm[2]) + '</span>\n  '; continue }
-
-    // div / section / etc
-    var dm = line.match(/^(div|section|header|nav|footer|main|article)(?:\s+(#[\w-]+))?\s+"([^"]+)"$/)
-    if (dm) { var did = dm[2] ? dm[2].slice(1) : ''; html += '<'+dm[1]+(did?' id="'+did+'"':'')+'>'+escapeHTML(dm[3])+'</'+dm[1]+'>\n  '; continue }
+    if (!line || line.startsWith('title ') || line.startsWith('//')) continue
+    html += parseHTMLElement(line)
   }
 
   return html
 }
 
-function compileThreadCSS(source) {
-  var aliases = {
-    bg:'background', text:'color', radius:'border-radius',
-    size:'font-size', weight:'font-weight', pad:'padding',
-    w:'width', h:'height', align:'text-align', gap:'gap', border:'border'
+function parseHTMLElement(line) {
+  // h1–h6 [id="x"] "text"   or   h1 #id "text"
+  var hm = line.match(/^(h[1-6])(?:\s+(?:id="([\w-]+)"|#([\w-]+)))?\s+"([^"]+)"$/)
+  if (hm) {
+    var id = hm[2] || hm[3] || ''
+    return '<' + hm[1] + (id ? ' id="' + id + '"' : '') + '>' + esc(hm[4]) + '</' + hm[1] + '>\n  '
   }
-  var numericProps = ['padding','margin','border-radius','font-size','width','height',
-    'gap','min-height','max-width','line-height','letter-spacing','top','left','right','bottom']
 
-  var lines = source.split('\n').map(function(l){ return l.trim() }).filter(Boolean)
+  // p [#id] "text"
+  var pm = line.match(/^p(?:\s+#([\w-]+))?\s+"([^"]+)"$/)
+  if (pm) return '<p' + (pm[1] ? ' id="' + pm[1] + '"' : '') + '>' + esc(pm[2]) + '</p>\n  '
+
+  // button [#id] "text"
+  var bm = line.match(/^button(?:\s+#([\w-]+))?\s+"([^"]+)"$/)
+  if (bm) return '<button' + (bm[1] ? ' id="' + bm[1] + '"' : '') + '>' + esc(bm[2]) + '</button>\n  '
+
+  // input [#id] "placeholder"
+  var im = line.match(/^input(?:\s+#([\w-]+))?\s+"([^"]+)"$/)
+  if (im) return '<input' + (im[1] ? ' id="' + im[1] + '"' : '') + ' placeholder="' + esc(im[2]) + '" />\n  '
+
+  // a #id "text"  or  a "text" href="url"
+  var am = line.match(/^a(?:\s+#([\w-]+))?\s+"([^"]+)"(?:\s+href="([^"]+)")?$/)
+  if (am) return '<a' + (am[1] ? ' id="' + am[1] + '"' : '') + (am[3] ? ' href="' + am[3] + '"' : '') + '>' + esc(am[2]) + '</a>\n  '
+
+  // span [#id] "text"
+  var sm = line.match(/^span(?:\s+#([\w-]+))?\s+"([^"]+)"$/)
+  if (sm) return '<span' + (sm[1] ? ' id="' + sm[1] + '"' : '') + '>' + esc(sm[2]) + '</span>\n  '
+
+  // div / section / header / nav / footer / main / article  [#id] "text"
+  var dm = line.match(/^(div|section|header|nav|footer|main|article|ul|li)(?:\s+#([\w-]+))?\s+"([^"]+)"$/)
+  if (dm) return '<' + dm[1] + (dm[2] ? ' id="' + dm[2] + '"' : '') + '>' + esc(dm[3]) + '</' + dm[1] + '>\n  '
+
+  return ''
+}
+
+// ══════════════════════════════════════════════
+//   THREAD CSS COMPILER
+//   Aliases: bg, text, pad, radius, size, weight, shadow, w, h, align, gap
+//   Shorthands: flex, row, column, center, wrap, rounded, pointer, bold, italic
+//   Presets: shadow: soft | hard
+//   Numeric: raw numbers get 'px' appended
+//   Nested selectors supported
+// ══════════════════════════════════════════════
+
+var THREAD_ALIASES = {
+  bg: 'background', text: 'color', radius: 'border-radius',
+  size: 'font-size', weight: 'font-weight', pad: 'padding',
+  margin: 'margin', w: 'width', h: 'height', align: 'text-align',
+  gap: 'gap', border: 'border'
+}
+
+var THREAD_PRESETS = {
+  shadow: {
+    soft: '0 4px 12px rgba(0,0,0,0.12)',
+    hard: '0 8px 24px rgba(0,0,0,0.25)'
+  }
+}
+
+var THREAD_NUMERIC = [
+  'padding','margin','border-radius','font-size','width','height',
+  'gap','min-height','max-width','line-height','letter-spacing',
+  'top','left','right','bottom','min-width'
+]
+
+function compileThreadBlock(source) {
+  // Parse into AST then render, to support nested selectors
+  var ast = parseThreadAST(source)
   var css = ''
-  var depth = 0
+  for (var i = 0; i < ast.length; i++) {
+    css += renderThreadRule(ast[i], '')
+  }
+  return css
+}
+
+function parseThreadAST(source) {
+  var lines = source.split('\n').map(function(l){ return l.trim() }).filter(function(l){ return l && !l.startsWith('//') })
+  var ast = []
+  var stack = []
 
   for (var i = 0; i < lines.length; i++) {
     var line = lines[i]
 
     if (line.endsWith('{')) {
       var sel = line.slice(0, -1).trim()
-      css += sel + ' {\n'
-      depth++
+      var node = { selector: sel, properties: [], children: [] }
+      if (stack.length === 0) ast.push(node)
+      else stack[stack.length - 1].children.push(node)
+      stack.push(node)
       continue
     }
+
     if (line === '}') {
-      css += '}\n'
-      depth--
+      stack.pop()
       continue
     }
 
-    var indent = '  '
+    if (stack.length === 0) continue
 
-    // Shorthand keywords
-    if (line === 'flex')   { css += indent + 'display: flex;\n';             continue }
-    if (line === 'row')    { css += indent + 'flex-direction: row;\n';       continue }
-    if (line === 'column') { css += indent + 'flex-direction: column;\n';   continue }
-    if (line === 'center') { css += indent + 'justify-content: center;\n' + indent + 'align-items: center;\n'; continue }
-    if (line === 'wrap')   { css += indent + 'flex-wrap: wrap;\n';           continue }
-    if (line === 'relative') { css += indent + 'position: relative;\n';     continue }
-    if (line === 'absolute') { css += indent + 'position: absolute;\n';     continue }
-    if (line === 'fixed')    { css += indent + 'position: fixed;\n';        continue }
-    if (line === 'bold')     { css += indent + 'font-weight: bold;\n';      continue }
-    if (line === 'italic')   { css += indent + 'font-style: italic;\n';     continue }
-    if (line === 'pointer')  { css += indent + 'cursor: pointer;\n';        continue }
-    if (line === 'block')    { css += indent + 'display: block;\n';         continue }
-    if (line === 'inline')   { css += indent + 'display: inline;\n';        continue }
-    if (line === 'none')     { css += indent + 'display: none;\n';          continue }
-
-    // Colon or space delimited property: value
-    var colonIdx = line.indexOf(':')
-    var spaceIdx = line.indexOf(' ')
-    var prop, val
-
-    if (colonIdx > 0) {
-      prop = line.slice(0, colonIdx).trim()
-      val  = line.slice(colonIdx + 1).trim()
-    } else if (spaceIdx > 0) {
-      prop = line.slice(0, spaceIdx).trim()
-      val  = line.slice(spaceIdx + 1).trim()
+    var colon = line.indexOf(':')
+    if (colon > 0) {
+      stack[stack.length - 1].properties.push({ key: line.slice(0, colon).trim(), value: line.slice(colon + 1).trim() })
     } else {
-      continue
+      stack[stack.length - 1].properties.push({ key: line, value: true })
     }
+  }
 
-    prop = aliases[prop] || prop
+  return ast
+}
 
-    if (numericProps.includes(prop)) {
-      val = val.split(/\s+/).map(function(v) {
-        return (!isNaN(v) && v !== '') ? v + 'px' : v
-      }).join(' ')
-    }
+function renderThreadRule(rule, parent) {
+  var selector = parent ? parent + ' ' + rule.selector : rule.selector
+  var css = selector + ' {\n'
 
-    css += indent + prop + ': ' + val + ';\n'
+  for (var i = 0; i < rule.properties.length; i++) {
+    var p = rule.properties[i]
+    css += renderThreadProperty(p.key, p.value)
+  }
+
+  css += '}\n\n'
+
+  for (var j = 0; j < rule.children.length; j++) {
+    css += renderThreadRule(rule.children[j], selector)
   }
 
   return css
 }
 
-function compileScript(source) {
-  var js = ''
-
-  // on("sel", "event", handler)
-  var onRe = /on\("([^"]+)",\s*"([^"]+)",\s*(\w+)\)/g
-  var om
-  while ((om = onRe.exec(source)) !== null) {
-    js += 'document.querySelector("' + om[1] + '").addEventListener("' + om[2] + '", ' + om[3] + ');\n'
+function renderThreadProperty(key, value) {
+  // Boolean shorthand keywords
+  var shorthands = {
+    flex:     '  display: flex;\n',
+    row:      '  flex-direction: row;\n',
+    column:   '  flex-direction: column;\n',
+    center:   '  justify-content: center;\n  align-items: center;\n',
+    wrap:     '  flex-wrap: wrap;\n',
+    rounded:  '  border-radius: 999px;\n',
+    pointer:  '  cursor: pointer;\n',
+    bold:     '  font-weight: bold;\n',
+    italic:   '  font-style: italic;\n',
+    block:    '  display: block;\n',
+    inline:   '  display: inline;\n',
+    relative: '  position: relative;\n',
+    absolute: '  position: absolute;\n',
+    fixed:    '  position: fixed;\n',
+    none:     '  display: none;\n',
+    nowrap:   '  white-space: nowrap;\n',
+    uppercase:'  text-transform: uppercase;\n',
   }
 
-  // task name() { ... }
-  var taskRe = /task\s+(\w+)\s*\(\)\s*\{([\s\S]*?)\}/g
-  var tm
-  while ((tm = taskRe.exec(source)) !== null) {
-    js += 'function ' + tm[1] + '() {\n  ' + compileTaskBody(tm[2].trim()) + '\n}\n'
+  if (shorthands[key]) return shorthands[key]
+
+  if (value === true) return '' // unknown bare keyword, skip
+
+  var prop = THREAD_ALIASES[key] || key
+
+  // Preset lookup (e.g. shadow: soft)
+  if (THREAD_PRESETS[prop] && THREAD_PRESETS[prop][value]) {
+    return '  ' + prop + ': ' + THREAD_PRESETS[prop][value] + ';\n'
+  }
+  if (THREAD_PRESETS[key] && THREAD_PRESETS[key][value]) {
+    return '  box-shadow: ' + THREAD_PRESETS[key][value] + ';\n'
   }
 
-  return js
+  // Numeric: append px to bare numbers
+  if (THREAD_NUMERIC.includes(prop)) {
+    value = String(value).split(/\s+/).map(function(v) {
+      return (!isNaN(v) && v !== '') ? v + 'px' : v
+    }).join(' ')
+  }
+
+  return '  ' + prop + ': ' + value + ';\n'
 }
 
-function compileTaskBody(body) {
-  var js = ''
-  var lines = body.split('\n').map(function(l){ return l.trim() }).filter(Boolean)
+// ══════════════════════════════════════════════
+//   WEAVE JS COMPILER
+//   say → console.log
+//   put(val, "#sel") → document.querySelector...
+//   on("#sel","event",fn) → addEventListener
+//   load("url") → await fetch...
+//   ping("url") → await fetch HEAD...
+//   task → function
+//   let/if/else/for/while → pass through
+// ══════════════════════════════════════════════
+
+function compileWeaveBlock(source) {
+  var lines = source.split('\n')
+  var out = []
+  var inTask = false
+
   for (var i = 0; i < lines.length; i++) {
-    var line = lines[i]
-    var putM = line.match(/put\("([^"]+)",\s*"([^"]+)"\)/)
-    if (putM) { js += 'document.querySelector("' + putM[2] + '").innerText = "' + putM[1] + '";\n  '; continue }
-    var sayM = line.match(/say\("([^"]+)"\)/)
-    if (sayM) { js += 'console.log("' + sayM[1] + '");\n  '; continue }
-    var alertM = line.match(/alert\("([^"]+)"\)/)
-    if (alertM) { js += 'alert("' + alertM[1] + '");\n  '; continue }
+    out.push(compileWeaveLine(lines[i]))
   }
-  return js
+
+  return out.join('\n')
+}
+
+function compileWeaveLine(line) {
+  var t = line.trim()
+
+  if (t === '' || t.startsWith('//')) return line
+
+  // task name(args) { → function name(args) {
+  if (/^task\s+\w+\s*\(/.test(t)) return line.replace(/\btask\b/, 'function')
+
+  // say(...) → console.log(...)
+  if (/\bsay\s*\(/.test(t)) return line.replace(/\bsay\s*\(/g, 'console.log(')
+
+  // put(value, "#sel") → document.querySelector("#sel").textContent = value
+  var putM = t.match(/^put\s*\(\s*(.+?)\s*,\s*["'](.+?)["']\s*\)$/)
+  if (putM) {
+    var indent = line.match(/^(\s*)/)[1]
+    return indent + 'document.querySelector("' + putM[2] + '").textContent = ' + putM[1] + ';'
+  }
+
+  // on("#sel", "event", handler)
+  var onM = t.match(/^on\s*\(\s*["'](.+?)["']\s*,\s*["'](.+?)["']\s*,\s*(.+?)\s*\)$/)
+  if (onM) {
+    var ind = line.match(/^(\s*)/)[1]
+    return ind + 'document.querySelector("' + onM[1] + '").addEventListener("' + onM[2] + '", ' + onM[3] + ');'
+  }
+
+  // load("url") → await fetch(url).then(r => r.json())
+  if (/\bload\s*\(\s*["']/.test(t)) {
+    return line.replace(/\bload\s*\(\s*["'](.+?)["']\s*\)/g, "fetch('$1').then(function(r){ return r.json() })")
+  }
+
+  // ping("url") → fetch(url, {method:"HEAD"}).then(r=>r.ok).catch(()=>false)
+  if (/\bping\s*\(\s*["']/.test(t)) {
+    return line.replace(/\bping\s*\(\s*["'](.+?)["']\s*\)/g, "fetch('$1', { method: 'HEAD' }).then(function(r){ return r.ok }).catch(function(){ return false })")
+  }
+
+  return line
+}
+
+// ── Page builders ──────────────────────────────
+
+function buildFullPage(title, bodyHTML, css, js) {
+  return '<!DOCTYPE html>\n<html lang="en">\n<head>\n' +
+    '  <meta charset="UTF-8">\n' +
+    '  <title>' + esc(title) + '</title>\n' +
+    '  <style>\n* { box-sizing: border-box; margin: 0; padding: 0; }\n' + css + '\n  </style>\n' +
+    '</head>\n<body>\n  ' + bodyHTML + '\n' +
+    '  <script>\n' + js + '\n  <\/script>\n' +
+    '</body>\n</html>'
+}
+
+function buildJSOnlyPage(js) {
+  return '<!DOCTYPE html>\n<html lang="en">\n<head><meta charset="UTF-8"><title>Weave Output</title>' +
+    '<style>body{background:#0a0a0f;color:#6ee7b7;font-family:\'JetBrains Mono\',monospace;padding:24px;font-size:13px;}</style>' +
+    '</head>\n<body>\n<pre id="output"></pre>\n<script>\n' +
+    '(function(){\n' +
+    '  var _log = console.log.bind(console);\n' +
+    '  var out = document.getElementById("output");\n' +
+    '  console.log = function() { var msg = Array.from(arguments).join(" "); out.textContent += msg + "\\n"; _log.apply(console, arguments); };\n' +
+    js + '\n})();\n<\/script>\n</body>\n</html>'
+}
+
+function buildThreadPreviewPage(css) {
+  return '<!DOCTYPE html>\n<html lang="en">\n<head><meta charset="UTF-8"><title>Thread Preview</title>' +
+    '<style>* { box-sizing: border-box; margin: 0; padding: 0; }\n' + css + '</style>' +
+    '</head>\n<body></body>\n</html>'
+}
+
+function esc(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;')
 }
 
 // ── COMPILE + PREVIEW ─────────────────────────
@@ -431,10 +700,8 @@ function compileAndPreview() {
   try {
     var compiled = compileWeave(source)
     lastCompiledHTML = compiled
-
     document.getElementById('preview').srcdoc = compiled
     document.getElementById('outputView').textContent = compiled
-
     setStatus('ok', 'Compiled')
   } catch (err) {
     setStatus('error', 'Error: ' + err.message)
@@ -453,7 +720,7 @@ function setStatus(type, msg) {
   navTxt.textContent = msg
 }
 
-// ── TOOLBAR BUTTONS ───────────────────────────
+// ── TOOLBAR ───────────────────────────────────
 
 document.getElementById('compileBtn').addEventListener('click', compileAndPreview)
 document.getElementById('runBtn').addEventListener('click', compileAndPreview)
@@ -475,7 +742,7 @@ document.getElementById('newWindowBtn').addEventListener('click', function () {
   w.document.close()
 })
 
-// Output / Preview tab toggle
+// Preview / Output tabs
 function showPreview() {
   document.getElementById('preview').style.display    = 'block'
   document.getElementById('outputView').style.display = 'none'
@@ -483,7 +750,6 @@ function showPreview() {
   document.getElementById('outputTab').classList.remove('active')
   showingOutput = false
 }
-
 function showOutput() {
   document.getElementById('preview').style.display    = 'none'
   document.getElementById('outputView').style.display = 'block'
@@ -491,7 +757,6 @@ function showOutput() {
   document.getElementById('previewTab').classList.remove('active')
   showingOutput = true
 }
-
 document.getElementById('previewTab').addEventListener('click', showPreview)
 document.getElementById('outputTab').addEventListener('click', showOutput)
 
@@ -502,10 +767,10 @@ document.querySelectorAll('.tree-file').forEach(function (item) {
     document.querySelectorAll('.tree-file').forEach(function(f){ f.classList.remove('active') })
     item.classList.add('active')
 
-    var key = item.dataset.example
+    var key  = item.dataset.example
     var name = item.querySelector('span:last-child').textContent
-    document.getElementById('currentFile').textContent    = name
-    document.getElementById('editorTabLabel').textContent  = name
+    document.getElementById('currentFile').textContent      = name
+    document.getElementById('editorTabLabel').textContent   = name
     document.getElementById('editorBreadcrumb').textContent = name
 
     if (key && EXAMPLES[key]) {
@@ -513,20 +778,14 @@ document.querySelectorAll('.tree-file').forEach(function (item) {
         editor.setValue(EXAMPLES[key])
         compileAndPreview()
       } else {
-        // Editor not loaded yet — wait for it
-        var waitForEditor = setInterval(function () {
-          if (editor) {
-            clearInterval(waitForEditor)
-            editor.setValue(EXAMPLES[key])
-            compileAndPreview()
-          }
+        var wait = setInterval(function () {
+          if (editor) { clearInterval(wait); editor.setValue(EXAMPLES[key]); compileAndPreview() }
         }, 100)
       }
     }
   })
 })
 
-// Keyboard shortcut: Ctrl/Cmd + Enter → compile
 document.addEventListener('keydown', function (e) {
   if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
     e.preventDefault()
@@ -544,13 +803,8 @@ var sendCtx  = document.getElementById('sendContext')
 
 function toggleAI(open) {
   aiOpen = (open !== undefined) ? open : !aiOpen
-  if (aiOpen) {
-    aiPanel.classList.add('open')
-    document.getElementById('aiToggleLabel').textContent = 'Close AI'
-  } else {
-    aiPanel.classList.remove('open')
-    document.getElementById('aiToggleLabel').textContent = 'AI'
-  }
+  aiPanel.classList.toggle('open', aiOpen)
+  document.getElementById('aiToggleLabel').textContent = aiOpen ? 'Close AI' : 'AI'
 }
 
 document.getElementById('aiToggle').addEventListener('click', function(){ toggleAI() })
@@ -565,12 +819,8 @@ document.querySelectorAll('.ai-chip').forEach(function (chip) {
 })
 
 aiPrompt.addEventListener('keydown', function (e) {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault()
-    sendAIMessage()
-  }
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendAIMessage() }
 })
-
 aiSend.addEventListener('click', sendAIMessage)
 
 function appendMessage(role, content, code) {
@@ -586,19 +836,12 @@ function appendMessage(role, content, code) {
   if (code) {
     var pre = document.createElement('pre')
     pre.textContent = code
-
     var btn = document.createElement('button')
-    btn.className = 'ai-insert-btn'
-    btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1V11M1 6H11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg> Insert into editor'
+    btn.className   = 'ai-insert-btn'
+    btn.textContent = '⊕ Insert into editor'
     btn.addEventListener('click', function () {
-      if (editor) {
-        editor.setValue(code)
-        compileAndPreview()
-        toggleAI(false)
-      }
+      if (editor) { editor.setValue(code); compileAndPreview(); toggleAI(false) }
     })
-
-    // Text before the code block
     var textBefore = content.split(/```[\w]*\n[\s\S]*?```/)[0].trim()
     if (textBefore) {
       var p = document.createElement('p')
@@ -609,7 +852,6 @@ function appendMessage(role, content, code) {
     bubble.appendChild(pre)
     bubble.appendChild(btn)
   } else {
-    // Render inline code and line breaks
     bubble.innerHTML = content
       .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
       .replace(/`([^`]+)`/g, '<code>$1</code>')
@@ -620,21 +862,18 @@ function appendMessage(role, content, code) {
   msg.appendChild(bubble)
   aiChat.appendChild(msg)
   aiChat.scrollTop = aiChat.scrollHeight
-  return msg
 }
 
 function appendThinking() {
   var msg    = document.createElement('div')
   var avatar = document.createElement('div')
   var bubble = document.createElement('div')
-
-  msg.className    = 'ai-message ai-message-system'
-  msg.id           = 'thinking-msg'
-  avatar.className = 'ai-avatar'
+  msg.className      = 'ai-message ai-message-system'
+  msg.id             = 'thinking-msg'
+  avatar.className   = 'ai-avatar'
   avatar.textContent = 'W'
   bubble.className   = 'ai-bubble ai-thinking'
   bubble.innerHTML   = '<span>Thinking</span><span class="thinking-dots"><span></span><span></span><span></span></span>'
-
   msg.appendChild(avatar)
   msg.appendChild(bubble)
   aiChat.appendChild(msg)
@@ -647,21 +886,26 @@ async function sendAIMessage() {
   if (!prompt) return
 
   appendMessage('user', prompt)
-  aiPrompt.value = ''
+  aiPrompt.value  = ''
   aiSend.disabled = true
 
   var fullPrompt = prompt
   if (sendCtx.checked && editor) {
     var code = editor.getValue()
-    fullPrompt = 'You are an expert weave.web developer assistant. weave.web is a language that compiles to HTML/CSS/JS.\n\n' +
-      'Weave.web language reference:\n' +
-      '- Imports: @import HTML body | @import Thread style | @import JS ff\n' +
-      '- Page block: page Name { h1 "text"  p "text"  button #id "text"  input #id "placeholder" }\n' +
-      '- Thread CSS: style { selector { prop: value  OR  prop value } keywords: flex center row column wrap bold pointer }\n' +
-      '- Script: script { on("#id", "event", handler)  task name() { put("text", "#sel")  alert("msg") } }\n\n' +
+    fullPrompt =
+      'You are an expert weave.web developer. weave.web uses .web files for all three languages.\n\n' +
+      'LANGUAGE SYSTEM: @import lines at the top of a .web file declare the language mode — like <script type="..."> tags.\n' +
+      '  @import HTML body   → chicken-nuget HTML block (page { h1 "text"  button #id "text" })\n' +
+      '  @import Thread style → Thread CSS block (style { selector { bg: blue  pad: 20  flex  center } })\n' +
+      '  @import JS ff        → Weave JS block (script { say()  put()  on()  load()  ping()  task })\n\n' +
+      'WEAVE builtins: say(val)  put(val, "#sel")  on("#sel","event",fn)  load("url")  ping("url")  task name(args){}\n' +
+      'THREAD aliases: bg=background  text=color  pad=padding  radius=border-radius  size=font-size  weight=font-weight\n' +
+      'THREAD shorthands: flex  row  column  center  wrap  rounded  pointer  bold  italic  uppercase\n' +
+      'THREAD presets: shadow: soft | hard\n' +
+      'HTML elements: h1-h6 #id "text"  p #id "text"  button #id "text"  input #id "placeholder"  a #id "text" href="url"\n\n' +
       'Current editor code:\n```\n' + code + '\n```\n\n' +
       'User request: ' + prompt + '\n\n' +
-      'If generating code, wrap it in a single ```weave code block. Keep explanations brief.'
+      'If generating code, wrap it in a single ```weave code block.'
   }
 
   var thinking = appendThinking()
@@ -673,11 +917,9 @@ async function sendAIMessage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prompt: fullPrompt })
     })
-
     var raw = await resp.text()
     var data = {}
     try { data = JSON.parse(raw) } catch(e) { throw new Error(raw) }
-
     if (!resp.ok) throw new Error(data.error || 'HTTP ' + resp.status)
 
     var result = data.result || data.content || ''
@@ -686,11 +928,9 @@ async function sendAIMessage() {
     thinking.remove()
 
     var codeMatch = result.match(/```(?:weave|web)?\n([\s\S]*?)```/)
-    if (codeMatch) {
-      appendMessage('assistant', result, codeMatch[1].trim())
-    } else {
-      appendMessage('assistant', result)
-    }
+    if (codeMatch) appendMessage('assistant', result, codeMatch[1].trim())
+    else appendMessage('assistant', result)
+
   } catch (err) {
     thinking.remove()
     appendMessage('assistant', '⚠️ Error: ' + err.message)
