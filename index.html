@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>weave.web — IDE</title>
+  <title>weave.web - IDE</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css"/>
@@ -20,11 +20,12 @@
     <div class="logo">
       <span class="logo-mark">⟨/⟩</span>
       <span class="logo-text">weave<span class="logo-dot">.</span>web</span>
+      <span class="logo-version">v2</span>
     </div>
     <div class="lang-badges">
-      <span class="badge badge-weave">Weave</span>
-      <span class="badge badge-thread">Thread</span>
-      <span class="badge badge-nuget">chicken-nuget</span>
+      <span class="badge badge-weave" title="Weave — JS logic & interactivity">Weave</span>
+      <span class="badge badge-thread" title="Thread — CSS with superpowers">Thread</span>
+      <span class="badge badge-nuget" title="chicken-nuget — HTML structure">chicken-nuget</span>
     </div>
   </div>
 
@@ -38,21 +39,39 @@
   <div class="header-right">
     <div class="action-group">
       <button id="compileBtn" class="btn btn-ghost" title="Compile (Ctrl+Enter)">
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2L12 7L2 12V2Z" fill="currentColor"/></svg>
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+          <path d="M2 2L11 6.5L2 11V2Z" fill="currentColor"/>
+        </svg>
         Compile
       </button>
       <button id="runBtn" class="btn btn-ghost">
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 2L12 7L2 12V2Z" fill="currentColor" opacity="0.5"/><path d="M2 2L12 7L2 12V2Z" fill="currentColor" transform="translate(3 0)"/></svg>
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+          <path d="M2 2L11 6.5L2 11V2Z" fill="currentColor" opacity="0.4"/>
+          <path d="M5 2L11 6.5L5 11V2Z" fill="currentColor"/>
+        </svg>
         Run
       </button>
       <div class="divider-v"></div>
-      <button id="downloadBtn" class="btn btn-ghost">
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2V9M4 7L7 10L10 7M2 12H12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <button id="downloadBtn" class="btn btn-ghost" title="Export .web source">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+          <path d="M6.5 2V8M4 6L6.5 9L9 6M2 11H11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
         Export
+      </button>
+      <button id="exportHtmlBtn" class="btn btn-ghost" title="Export compiled HTML">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+          <rect x="1.5" y="1.5" width="10" height="10" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+          <path d="M4 5L2.5 6.5L4 8M9 5L10.5 6.5L9 8M7 4L6 9" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
+        HTML
       </button>
     </div>
     <button id="aiToggle" class="btn btn-ai">
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.5"/><circle cx="7" cy="7" r="2" fill="currentColor"/></svg>
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.5"/>
+        <circle cx="7" cy="7" r="2" fill="currentColor"/>
+        <path d="M7 2V1M7 13V12M2 7H1M13 7H12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+      </svg>
       <span id="aiToggleLabel">AI</span>
     </button>
   </div>
@@ -61,7 +80,7 @@
 <!-- MAIN WORKSPACE -->
 <main>
 
-  <!-- SIDEBAR: FILE EXPLORER -->
+  <!-- SIDEBAR: FILE EXPLORER + LANGUAGE REF -->
   <nav class="file-nav">
     <div class="nav-section-label">Explorer</div>
     <div class="file-tree">
@@ -98,27 +117,72 @@
       <div class="tree-item tree-file" data-example="hybrid">
         <span class="tree-spacer"></span>
         <span class="tree-icon file-web">◈</span>
-        <span>dashboard.web</span>
+        <span>game.web</span>
       </div>
     </div>
 
-    <div class="nav-section-label" style="margin-top:24px">Language</div>
-    <div class="lang-info">
-      <div class="lang-item">
-        <span class="lang-dot" style="background:#6ee7b7"></span>
-        <span>.web</span>
-        <span class="lang-desc">Weave source</span>
-      </div>
-      <div class="lang-item">
-        <span class="lang-dot" style="background:#818cf8"></span>
-        <span>.thread</span>
-        <span class="lang-desc">CSS styles</span>
-      </div>
-      <div class="lang-item">
-        <span class="lang-dot" style="background:#fb923c"></span>
-        <span>.nuget</span>
-        <span class="lang-desc">HTML base</span>
-      </div>
+    <!-- LANGUAGE REFERENCE -->
+    <div class="nav-section-label" style="margin-top:24px">Reference</div>
+    <div class="lang-ref">
+
+      <details class="ref-group" open>
+        <summary class="ref-label ref-html">🧱 chicken-nuget</summary>
+        <div class="ref-items">
+          <div class="ref-item"><code>page Name { }</code></div>
+          <div class="ref-item"><code>div #id .cls { }</code></div>
+          <div class="ref-item"><code>h1 "text"</code></div>
+          <div class="ref-item"><code>button #id "label"</code></div>
+          <div class="ref-item"><code>img src="url"</code></div>
+          <div class="ref-item"><code>ul { li "item" }</code></div>
+          <div class="ref-item"><code>component Name { }</code></div>
+          <div class="ref-item"><code>slot "name"</code></div>
+        </div>
+      </details>
+
+      <details class="ref-group">
+        <summary class="ref-label ref-thread">🎨 Thread</summary>
+        <div class="ref-items">
+          <div class="ref-item"><code>bg: #color</code></div>
+          <div class="ref-item"><code>text: #color</code></div>
+          <div class="ref-item"><code>pad: 20 40</code></div>
+          <div class="ref-item"><code>radius: 12</code></div>
+          <div class="ref-item"><code>size: clamp(16,2vw,24)</code></div>
+          <div class="ref-item"><code>flex  center  grid</code></div>
+          <div class="ref-item"><code>glass  glow  sticky</code></div>
+          <div class="ref-item"><code>shadow: soft|glow|lifted</code></div>
+          <div class="ref-item"><code>transition: smooth|bounce</code></div>
+          <div class="ref-item"><code>gradient: neon|sunset</code></div>
+          <div class="ref-item"><code>animate: name 0.5s ease</code></div>
+          <div class="ref-item"><code>&:hover { }</code></div>
+          <div class="ref-item"><code>@keyframes name { }</code></div>
+          <div class="ref-item"><code>@media (max-width: 768px)</code></div>
+          <div class="ref-item"><code>--var: #color</code></div>
+        </div>
+      </details>
+
+      <details class="ref-group">
+        <summary class="ref-label ref-weave">⚡ Weave</summary>
+        <div class="ref-items">
+          <div class="ref-item"><code>task name(args) { }</code></div>
+          <div class="ref-item"><code>put(val, "#sel")</code></div>
+          <div class="ref-item"><code>html("#sel", `markup`)</code></div>
+          <div class="ref-item"><code>on("#sel","click",fn)</code></div>
+          <div class="ref-item"><code>show / hide / toggle</code></div>
+          <div class="ref-item"><code>addClass / toggleClass</code></div>
+          <div class="ref-item"><code>attr / getAttr / style</code></div>
+          <div class="ref-item"><code>query / queryAll</code></div>
+          <div class="ref-item"><code>emit(el,"event",data)</code></div>
+          <div class="ref-item"><code>await get("url")</code></div>
+          <div class="ref-item"><code>await post("url", body)</code></div>
+          <div class="ref-item"><code>await wait(500)</code></div>
+          <div class="ref-item"><code>store("k",v) / get("k")</code></div>
+          <div class="ref-item"><code>repeat(n, fn)</code></div>
+          <div class="ref-item"><code>tween(el,props,ms)</code></div>
+          <div class="ref-item"><code>route("/path", fn)</code></div>
+          <div class="ref-item"><code>say(val)</code></div>
+        </div>
+      </details>
+
     </div>
 
     <div class="nav-footer">
@@ -139,6 +203,11 @@
         <span class="crumb-sep">›</span>
         <span id="editorBreadcrumb">app.web</span>
       </div>
+      <div class="editor-hints">
+        <span class="hint-key">Ctrl+Enter</span><span class="hint-label">compile</span>
+        <span class="hint-key">Ctrl+K</span><span class="hint-label">AI</span>
+        <span class="hint-key">Ctrl+S</span><span class="hint-label">save</span>
+      </div>
     </div>
     <div id="editor"></div>
   </section>
@@ -147,24 +216,37 @@
   <section class="preview-panel">
     <div class="panel-tabs">
       <div class="panel-tab active" id="previewTab">
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1" y="1" width="10" height="10" rx="2" stroke="currentColor" stroke-width="1.2"/><rect x="3" y="3" width="2" height="2" fill="currentColor"/><rect x="3" y="7" width="6" height="1" rx="0.5" fill="currentColor"/><rect x="3" y="5" width="6" height="1" rx="0.5" fill="currentColor"/></svg>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <rect x="1" y="1" width="10" height="10" rx="2" stroke="currentColor" stroke-width="1.2"/>
+          <rect x="3" y="3" width="2" height="2" fill="currentColor"/>
+          <rect x="3" y="7" width="6" height="1" rx="0.5" fill="currentColor"/>
+          <rect x="3" y="5" width="6" height="1" rx="0.5" fill="currentColor"/>
+        </svg>
         Preview
       </div>
       <div class="panel-tab" id="outputTab">
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 2H10M2 5H8M2 8H6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
-        Output
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <path d="M2 2H10M2 5H8M2 8H6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
+        HTML Output
       </div>
       <div class="preview-actions">
-        <button class="icon-btn" id="refreshBtn" title="Refresh">
-          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M10.5 2.5A5 5 0 1 0 11.5 6.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M11.5 1.5V4.5H8.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <button class="icon-btn" id="refreshBtn" title="Refresh preview">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+            <path d="M10.5 2.5A5 5 0 1 0 11.5 6.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+            <path d="M11.5 1.5V4.5H8.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
         </button>
         <button class="icon-btn" id="newWindowBtn" title="Open in new tab">
-          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="1.5" y="3.5" width="8" height="8" rx="1" stroke="currentColor" stroke-width="1.2"/><path d="M5 1.5H11.5V8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+            <rect x="1.5" y="3.5" width="8" height="8" rx="1" stroke="currentColor" stroke-width="1.2"/>
+            <path d="M5 1.5H11.5V8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
         </button>
       </div>
     </div>
     <div class="preview-container">
-      <iframe id="preview"></iframe>
+      <iframe id="preview" sandbox="allow-scripts allow-modals allow-same-origin"></iframe>
       <pre id="outputView" style="display:none"></pre>
     </div>
   </section>
@@ -178,9 +260,11 @@
       <div class="ai-pulse"></div>
       <span>Weave AI</span>
     </div>
-    <div class="ai-model-badge">claude-sonnet-4</div>
+    <div class="ai-model-badge">llama-3.3-70b</div>
     <button class="icon-btn" id="aiClose">
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 3L11 11M11 3L3 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <path d="M3 3L11 11M11 3L3 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
     </button>
   </div>
 
@@ -188,7 +272,8 @@
     <div class="ai-message ai-message-system">
       <div class="ai-avatar">W</div>
       <div class="ai-bubble">
-        I'm your weave.web assistant. I can generate <code>.web</code> apps, explain the language, fix bugs, and more. What are you building?
+        I'm your <strong>weave.web v2</strong> assistant — I know the full language spec including nested HTML, Thread variables, <code>glass</code>, <code>glow</code>, <code>gradient</code>, <code>@keyframes</code>, <code>tween()</code>, <code>emit()</code>, multi-turn context, and everything in between.<br><br>
+        What are we building?
       </div>
     </div>
   </div>
@@ -202,16 +287,20 @@
       </label>
     </div>
     <div class="ai-input-row">
-      <textarea id="aiPrompt" placeholder="Generate a dashboard, fix a bug, explain Thread syntax…" rows="3"></textarea>
+      <textarea id="aiPrompt" placeholder="Build a landing page, add animations, fix a bug, explain Thread glass…" rows="3"></textarea>
       <button id="aiSend" class="ai-send-btn">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M14 2L2 7L7 9M14 2L9 14L7 9M14 2L7 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M14 2L2 7L7 9M14 2L9 14L7 9M14 2L7 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
       </button>
     </div>
     <div class="ai-actions">
-      <button class="ai-chip" data-prompt="Generate a complete weave.web dashboard with a nav, cards, and a button that shows an alert">Dashboard</button>
-      <button class="ai-chip" data-prompt="Generate a landing page with a hero section, features list, and styled with Thread">Landing page</button>
-      <button class="ai-chip" data-prompt="Fix any bugs in my current code and explain what you changed">Fix bugs</button>
-      <button class="ai-chip" data-prompt="Explain what Thread syntax does and give me a complete style example">Explain Thread</button>
+      <button class="ai-chip" data-prompt="Generate a stunning animated landing page with a hero, features grid, and CTA. Use Thread glass cards, gradient text, and @keyframes animations. Make it insane.">🚀 Landing page</button>
+      <button class="ai-chip" data-prompt="Build a full dashboard with a sidebar nav, stat cards, a data table, and a live chart. Use dark theme, Thread variables, and Weave fetch to load mock data.">📊 Dashboard</button>
+      <button class="ai-chip" data-prompt="Create an interactive todo app with add/delete/complete, localStorage persistence via store(), smooth animations, and a progress bar. Full hybrid weave.web.">✅ Todo App</button>
+      <button class="ai-chip" data-prompt="Build a multi-step form wizard with validation, progress indicator, animated transitions between steps, and a summary page. Use glass cards and Thread variables.">📝 Form wizard</button>
+      <button class="ai-chip" data-prompt="Fix any bugs in my current code, improve the styling with Thread v2 features like glass, glow, gradient, and add smooth hover animations.">🔧 Fix & improve</button>
+      <button class="ai-chip" data-prompt="Add @keyframes animations to my current code — a fade-in for the page load, hover micro-interactions on buttons, and a floating animation on the hero element.">✨ Add animations</button>
     </div>
   </div>
 </aside>
@@ -225,14 +314,33 @@
     </span>
     <span class="status-sep">·</span>
     <span class="status-item" id="lineColStatus">Ln 1, Col 1</span>
+    <span class="status-sep">·</span>
+    <span class="status-item">weave.web <span style="color:#6ee7b7">v2.0</span></span>
   </div>
   <div class="status-right">
-    <span class="status-item">weave.web v1.0</span>
+    <span class="status-item">
+      <span class="badge-mini badge-weave-sm">W</span> Weave
+      <span class="badge-mini badge-thread-sm">T</span> Thread
+      <span class="badge-mini badge-nuget-sm">N</span> chicken-nuget
+    </span>
     <span class="status-sep">·</span>
     <span class="status-item">UTF-8</span>
   </div>
 </div>
 
 <script src="app.js"></script>
+
+<script>
+// Export compiled HTML button
+document.getElementById('exportHtmlBtn').addEventListener('click', function () {
+  if (!lastCompiledHTML) return
+  var blob = new Blob([lastCompiledHTML], { type: 'text/html' })
+  var a    = document.createElement('a')
+  a.href   = URL.createObjectURL(blob)
+  a.download = (activeFile || 'app').replace('.web', '') + '.html'
+  a.click()
+})
+</script>
+
 </body>
 </html>
